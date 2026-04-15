@@ -163,7 +163,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateCurrentUser = async (updates: Partial<UserProfile>) => {
     if (!authUser) return;
-    const dbUpdates: Record<string, any> = {};
+    const dbUpdates: {
+      full_name?: string;
+      phone?: string;
+      position?: string;
+      company?: string;
+      project?: string;
+      avatar_url?: string;
+    } = {};
     if (updates.fullName !== undefined) dbUpdates.full_name = updates.fullName;
     if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
     if (updates.position !== undefined) dbUpdates.position = updates.position;

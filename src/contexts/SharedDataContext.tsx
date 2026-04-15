@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { companies as mockCompanies, people as mockPeople, projects as mockProjects, tasks as mockTasks, forms as mockForms, projectFiles as mockProjectFiles } from "@/lib/mockData";
-import { RegisteredUser } from "@/contexts/AuthContext";
+import { UserProfile } from "@/contexts/AuthContext";
 
 // Types
 export interface PersonData {
