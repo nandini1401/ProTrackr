@@ -85,6 +85,14 @@ const UserReportPage = () => {
       });
       localStorage.setItem(`user_reports_${currentUser.id}`, JSON.stringify(existing));
 
+      // Add activity for real-time dashboard
+      addActivity({
+        action: `Laporan harian submitted (${formNumber})`,
+        project: currentUser.project,
+        user: currentUser.fullName,
+        userAvatar: currentUser.avatarUrl,
+      });
+
       setWorkDescription("");
       setNotes("");
       setPhotos([]);
