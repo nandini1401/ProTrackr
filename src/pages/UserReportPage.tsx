@@ -10,7 +10,7 @@ import { Camera, Send, FileText } from "lucide-react";
 
 const UserReportPage = () => {
   const { currentUser } = useAuth();
-  const { addForm, addFileToProject } = useSharedData();
+  const { addForm, addFileToProject, addActivity } = useSharedData();
   const [workDescription, setWorkDescription] = useState("");
   const [notes, setNotes] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
