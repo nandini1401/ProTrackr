@@ -23,7 +23,7 @@ import {
 const menuItems = [
   { title: "Buat Laporan", url: "/user", icon: ClipboardList },
   { title: "Riwayat Laporan", url: "/user/history", icon: History },
-  { title: "Profil Saya", url: "/user/profile", icon: User },
+  { title: "Profil ", url: "/user/profile", icon: User },
 ];
 
 export function UserSidebar() {
@@ -51,7 +51,7 @@ export function UserSidebar() {
         <img src="/logo-protrackr.png" alt="ProTrackr" className="h-8 w-auto" />
         {!collapsed && (
           <span className="text-lg font-semibold text-sidebar-accent-foreground">
-            ProTrackr
+            {"\n"}
           </span>
         )}
       </div>

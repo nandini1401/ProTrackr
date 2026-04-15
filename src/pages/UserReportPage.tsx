@@ -115,7 +115,7 @@ const UserReportPage = () => {
         {/* Form */}
         <form onSubmit={handleSubmitReport} className="bg-card rounded-2xl border shadow-sm p-6 space-y-5">
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">Hari ini ngapain aja? *</Label>
+            <Label className="text-sm font-semibold">Detail Pekerjaan Hari ini?</Label>
             <Textarea
               placeholder="Jelaskan pekerjaan yang dilakukan hari ini..."
               value={workDescription}
@@ -143,14 +143,16 @@ const UserReportPage = () => {
               ))}
               <label className="w-24 h-24 rounded-xl border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-all">
                 <Camera className="h-6 w-6 text-muted-foreground mb-1" />
-                <span className="text-[10px] text-muted-foreground">Tambah</span>
+                <span className="text-[10px] text-muted-foreground whitespace-pre-wrap text-center leading-tight">
+                  {"    "}Tambah foto{"\n"}[bukti pekerjaan]
+                </span>
                 <input type="file" accept="image/*" multiple onChange={handlePhotoUpload} className="hidden" />
               </label>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">Catatan Tambahan</Label>
+            <Label className="text-sm font-semibold">Catatan Tambahan (Opsional)</Label>
             <Textarea
               placeholder="Catatan atau kendala yang dihadapi..."
               value={notes}
