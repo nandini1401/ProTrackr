@@ -31,7 +31,7 @@ const RegisterPage = () => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (form.password.length < 6) {
       toast.error("Password minimal 6 karakter");
@@ -42,31 +42,29 @@ const RegisterPage = () => {
       return;
     }
     setLoading(true);
-    setTimeout(() => {
-      const success = register({
-        fullName: form.fullName,
-        email: form.email,
-        phone: form.phone,
-        position: form.position,
-        company: form.company,
-        project: form.project,
-        password: form.password,
-      });
-      setLoading(false);
-      if (success) {
-        toast.success("Pendaftaran berhasil! Silakan login.");
-        navigate("/login");
-      } else {
-        toast.error("Email sudah terdaftar");
-      }
-    }, 500);
+    const result = await register({
+      fullName: form.fullName,
+      email: form.email,
+      phone: form.phone,
+      position: form.position,
+      company: form.company,
+      project: form.project,
+      password: form.password,
+    });
+    setLoading(false);
+    if (result.success) {
+      toast.success("Pendaftaran berhasil! Silakan login.");
+      navigate("/login");
+    } else {
+      toast.error(result.error || "Pendaftaran gagal");
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
-          <img src="/logo-protrackr.png" alt="ProTrackr" className="mx-auto h-20 w-auto" />
+          <img src="/logo-protrackr.png" alt="Logo" className="mx-auto h-20 w-auto" />
           <p className="text-sm text-muted-foreground">Daftar sebagai pekerja / user baru</p>
         </div>
 

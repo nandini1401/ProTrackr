@@ -1,116 +1,203 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
-export interface RegisteredUser {
+export interface UserProfile {
   id: string;
+  user_id: string;
   fullName: string;
   email: string;
   phone: string;
   position: string;
   company: string;
   project: string;
-  password: string;
   avatarUrl?: string;
 }
 
 interface AuthContextType {
   isAuthenticated: boolean;
   role: "admin" | "user" | null;
-  currentUser: RegisteredUser | null;
-  login: (username: string, password: string, role: "admin" | "user") => boolean;
+  currentUser: UserProfile | null;
+  authUser: User | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
-  register: (user: Omit<RegisteredUser, "id">) => boolean;
-  getRegisteredUsers: () => RegisteredUser[];
-  updateCurrentUser: (updates: Partial<RegisteredUser>) => void;
+  register: (userData: {
+    fullName: string;
+    email: string;
+    phone: string;
+    position: string;
+    company: string;
+    project: string;
+    password: string;
+  }) => Promise<{ success: boolean; error?: string }>;
+  updateCurrentUser: (updates: Partial<UserProfile>) => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   role: null,
   currentUser: null,
-  login: () => false,
+  authUser: null,
+  loading: true,
+  login: async () => ({ success: false }),
   logout: () => {},
-  register: () => false,
-  getRegisteredUsers: () => [],
-  updateCurrentUser: () => {},
+  register: async () => ({ success: false }),
+  updateCurrentUser: async () => {},
+  refreshProfile: async () => {},
 });
 
-function getStoredUsers(): RegisteredUser[] {
-  try {
-    return JSON.parse(localStorage.getItem("registered_users") || "[]");
-  } catch { return []; }
+async function fetchProfile(userId: string): Promise<UserProfile | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("user_id", userId)
+    .single();
+  if (error || !data) return null;
+  return {
+    id: data.id,
+    user_id: data.user_id,
+    fullName: data.full_name,
+    email: data.email,
+    phone: data.phone || "",
+    position: data.position || "",
+    company: (data as any).company || "",
+    project: (data as any).project || "",
+    avatarUrl: data.avatar_url || undefined,
+  };
+}
+
+async function fetchRole(userId: string): Promise<"admin" | "user"> {
+  const { data } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+  if (data && data.some((r) => r.role === "admin")) return "admin";
+  return "user";
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => sessionStorage.getItem("auth") === "true");
-  const [role, setRole] = useState<"admin" | "user" | null>(() => sessionStorage.getItem("auth_role") as any || null);
-  const [currentUser, setCurrentUser] = useState<RegisteredUser | null>(() => {
-    try { return JSON.parse(sessionStorage.getItem("current_user") || "null"); } catch { return null; }
-  });
+  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [role, setRole] = useState<"admin" | "user" | null>(null);
+  const [loading, setLoading] = useState(true);
+  const isAuthenticated = !!authUser;
 
-  const login = (username: string, password: string, loginRole: "admin" | "user"): boolean => {
-    if (loginRole === "admin") {
-      if (username === "Admin" && password === "Admin2026") {
-        setIsAuthenticated(true);
-        setRole("admin");
-        setCurrentUser(null);
-        sessionStorage.setItem("auth", "true");
-        sessionStorage.setItem("auth_role", "admin");
-        sessionStorage.removeItem("current_user");
-        return true;
-      }
-      return false;
-    } else {
-      const users = getStoredUsers();
-      const found = users.find(u => u.email === username && u.password === password);
-      if (found) {
-        setIsAuthenticated(true);
-        setRole("user");
-        setCurrentUser(found);
-        sessionStorage.setItem("auth", "true");
-        sessionStorage.setItem("auth_role", "user");
-        sessionStorage.setItem("current_user", JSON.stringify(found));
-        return true;
-      }
-      return false;
-    }
+  const loadUserData = async (user: User) => {
+    const [profile, userRole] = await Promise.all([
+      fetchProfile(user.id),
+      fetchRole(user.id),
+    ]);
+    setCurrentUser(profile);
+    setRole(userRole);
   };
 
-  const logout = () => {
-    setIsAuthenticated(false);
-    setRole(null);
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        const user = session?.user ?? null;
+        setAuthUser(user);
+        if (user) {
+          // Use setTimeout to avoid Supabase deadlock
+          setTimeout(() => loadUserData(user), 0);
+        } else {
+          setCurrentUser(null);
+          setRole(null);
+        }
+        setLoading(false);
+      }
+    );
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const user = session?.user ?? null;
+      setAuthUser(user);
+      if (user) {
+        loadUserData(user).then(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setAuthUser(null);
     setCurrentUser(null);
-    sessionStorage.removeItem("auth");
-    sessionStorage.removeItem("auth_role");
-    sessionStorage.removeItem("current_user");
+    setRole(null);
   };
 
-  const register = (userData: Omit<RegisteredUser, "id">): boolean => {
-    const users = getStoredUsers();
-    if (users.find(u => u.email === userData.email)) return false;
-    const newUser: RegisteredUser = { ...userData, id: crypto.randomUUID() };
-    users.push(newUser);
-    localStorage.setItem("registered_users", JSON.stringify(users));
-    return true;
+  const register = async (userData: {
+    fullName: string;
+    email: string;
+    phone: string;
+    position: string;
+    company: string;
+    project: string;
+    password: string;
+  }) => {
+    const { error } = await supabase.auth.signUp({
+      email: userData.email,
+      password: userData.password,
+      options: {
+        data: {
+          full_name: userData.fullName,
+          phone: userData.phone,
+          position: userData.position,
+          company: userData.company,
+          project: userData.project,
+        },
+      },
+    });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
   };
 
-  const updateCurrentUser = (updates: Partial<RegisteredUser>) => {
-    if (!currentUser) return;
-    const updated = { ...currentUser, ...updates };
-    setCurrentUser(updated);
-    sessionStorage.setItem("current_user", JSON.stringify(updated));
-    // Also update in registered_users localStorage
-    const users = getStoredUsers();
-    const idx = users.findIndex(u => u.id === currentUser.id);
-    if (idx !== -1) {
-      users[idx] = { ...users[idx], ...updates };
-      localStorage.setItem("registered_users", JSON.stringify(users));
-    }
+  const updateCurrentUser = async (updates: Partial<UserProfile>) => {
+    if (!authUser) return;
+    const dbUpdates: Record<string, any> = {};
+    if (updates.fullName !== undefined) dbUpdates.full_name = updates.fullName;
+    if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
+    if (updates.position !== undefined) dbUpdates.position = updates.position;
+    if (updates.company !== undefined) dbUpdates.company = updates.company;
+    if (updates.project !== undefined) dbUpdates.project = updates.project;
+    if (updates.avatarUrl !== undefined) dbUpdates.avatar_url = updates.avatarUrl;
+
+    await supabase
+      .from("profiles")
+      .update(dbUpdates)
+      .eq("user_id", authUser.id);
+
+    setCurrentUser((prev) => prev ? { ...prev, ...updates } : prev);
   };
 
-  const getRegisteredUsers = () => getStoredUsers();
+  const refreshProfile = async () => {
+    if (authUser) await loadUserData(authUser);
+  };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, role, currentUser, login, logout, register, getRegisteredUsers, updateCurrentUser }}>
+    <AuthContext.Provider
+      value={{
+        isAuthenticated,
+        role,
+        currentUser,
+        authUser,
+        loading,
+        login,
+        logout,
+        register,
+        updateCurrentUser,
+        refreshProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
