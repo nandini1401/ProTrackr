@@ -99,33 +99,8 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
                   </div>
                 )}
               </div>
-              <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
-                  <button onClick={handleBellClick} className="relative p-2 rounded-lg hover:bg-secondary">
-                    <Bell className={`h-5 w-5 text-muted-foreground ${bellAnimating ? "animate-bell-shake" : ""}`} />
-                    <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-80 p-0">
-                  <div className="p-3 border-b">
-                    <h4 className="text-sm font-semibold text-foreground">Notifikasi Terbaru</h4>
-                  </div>
-                  <div className="max-h-72 overflow-y-auto">
-                    {recentNotifications.map((n) => (
-                      <div key={n.id} className="p-3 border-b last:border-0 hover:bg-muted/50">
-                        <p className="text-sm font-medium text-foreground">{n.title}</p>
-                        <p className="text-xs text-muted-foreground">{n.project} · {n.assignee}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {n.status === "completed" ? "✅ Selesai" : "🔄 Dalam Proses"} · {n.date}
-                        </p>
-                      </div>
-                    ))}
-                    {recentNotifications.length === 0 && (
-                      <div className="p-4 text-center text-sm text-muted-foreground">Tidak ada notifikasi</div>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
+
+
             </div>
           </header>
           <main className="flex-1 p-4 lg:p-6 overflow-auto">{children}</main>
