@@ -74,6 +74,16 @@ export interface FileData {
   date: string;
 }
 
+export interface ActivityData {
+  id: string;
+  action: string;
+  project: string;
+  user: string;
+  userAvatar?: string;
+  time: string;
+  timestamp: number;
+}
+
 export interface ProjectFileData {
   id: string;
   projectId: string;
@@ -88,6 +98,7 @@ interface SharedDataContextType {
   tasks: TaskData[];
   forms: FormData[];
   projectFiles: ProjectFileData[];
+  activities: ActivityData[];
   addPerson: (person: PersonData) => void;
   updatePerson: (id: string, person: Partial<PersonData>) => void;
   deletePerson: (id: string) => void;
@@ -96,6 +107,7 @@ interface SharedDataContextType {
   updateProject: (id: string, project: Partial<ProjectData>) => void;
   deleteProject: (id: string) => void;
   addForm: (form: FormData) => void;
+  addActivity: (activity: Omit<ActivityData, "id" | "time" | "timestamp">) => void;
   addFileToProject: (projectName: string, file: FileData) => void;
   refreshFromRegistrations: () => void;
   getFormCount: () => number;
