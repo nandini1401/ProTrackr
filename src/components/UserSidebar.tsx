@@ -48,12 +48,10 @@ export function UserSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r-0">
       <div className="flex h-16 items-center gap-2 px-4 border-b border-sidebar-border">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
-          <FileText className="h-4 w-4 text-sidebar-primary-foreground" />
-        </div>
+        <img src="/logo-protrackr.png" alt="ProTrackr" className="h-8 w-auto" />
         {!collapsed && (
           <span className="text-lg font-semibold text-sidebar-accent-foreground">
-            ProjectLog
+            ProTrackr
           </span>
         )}
       </div>

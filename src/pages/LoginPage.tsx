@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FileText, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import {
@@ -58,10 +58,7 @@ const LoginPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-            <FileText className="h-6 w-6 text-primary-foreground" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">ProTrackr</h1>
+          <img src="/logo-protrackr.png" alt="ProTrackr" className="mx-auto h-16 w-auto" />
           <p className="text-sm text-muted-foreground">Sistem Informasi Laporan Harian Project</p>
         </div>
 
