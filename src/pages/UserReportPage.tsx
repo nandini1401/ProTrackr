@@ -10,7 +10,7 @@ import { Camera, Send, FileText } from "lucide-react";
 
 const UserReportPage = () => {
   const { currentUser } = useAuth();
-  const { addForm, addFileToProject } = useSharedData();
+  const { addForm, addFileToProject, addActivity } = useSharedData();
   const [workDescription, setWorkDescription] = useState("");
   const [notes, setNotes] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
@@ -84,6 +84,14 @@ const UserReportPage = () => {
         submittedAt: new Date().toISOString(),
       });
       localStorage.setItem(`user_reports_${currentUser.id}`, JSON.stringify(existing));
+
+      // Add activity for real-time dashboard
+      addActivity({
+        action: `Laporan harian submitted (${formNumber})`,
+        project: currentUser.project,
+        user: currentUser.fullName,
+        userAvatar: currentUser.avatarUrl,
+      });
 
       setWorkDescription("");
       setNotes("");

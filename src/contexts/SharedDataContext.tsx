@@ -74,6 +74,16 @@ export interface FileData {
   date: string;
 }
 
+export interface ActivityData {
+  id: string;
+  action: string;
+  project: string;
+  user: string;
+  userAvatar?: string;
+  time: string;
+  timestamp: number;
+}
+
 export interface ProjectFileData {
   id: string;
   projectId: string;
@@ -88,6 +98,7 @@ interface SharedDataContextType {
   tasks: TaskData[];
   forms: FormData[];
   projectFiles: ProjectFileData[];
+  activities: ActivityData[];
   addPerson: (person: PersonData) => void;
   updatePerson: (id: string, person: Partial<PersonData>) => void;
   deletePerson: (id: string) => void;
@@ -96,6 +107,7 @@ interface SharedDataContextType {
   updateProject: (id: string, project: Partial<ProjectData>) => void;
   deleteProject: (id: string) => void;
   addForm: (form: FormData) => void;
+  addActivity: (activity: Omit<ActivityData, "id" | "time" | "timestamp">) => void;
   addFileToProject: (projectName: string, file: FileData) => void;
   refreshFromRegistrations: () => void;
   getFormCount: () => number;
@@ -217,6 +229,28 @@ function getInitialTasks(): TaskData[] {
   return [...mockTasks] as TaskData[];
 }
 
+function getInitialActivities(): ActivityData[] {
+  const stored = localStorage.getItem("shared_activities");
+  if (stored) {
+    try { return JSON.parse(stored); } catch { /* fall through */ }
+  }
+  return [];
+}
+
+function formatTimeAgo(timestamp: number): string {
+  const diff = Date.now() - timestamp;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Baru saja";
+  if (mins < 60) return `${mins} menit lalu`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} jam lalu`;
+  const days = Math.floor(hours / 24);
+  return `${days} hari lalu`;
+}
+
+// BroadcastChannel for cross-tab real-time sync
+const channel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("shared_data_sync") : null;
+
 export function SharedDataProvider({ children }: { children: ReactNode }) {
   const [people, setPeople] = useState<PersonData[]>(getInitialPeople);
   const [companies, setCompanies] = useState<CompanyData[]>(getInitialCompanies);
@@ -224,6 +258,7 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
   const [tasks, setTasks] = useState<TaskData[]>(getInitialTasks);
   const [forms, setForms] = useState<FormData[]>(getInitialForms);
   const [projectFiles, setProjectFiles] = useState<ProjectFileData[]>(getInitialProjectFiles);
+  const [activities, setActivities] = useState<ActivityData[]>(getInitialActivities);
 
   // Persist to localStorage
   useEffect(() => { localStorage.setItem("shared_people", JSON.stringify(people)); }, [people]);
@@ -232,6 +267,44 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
   useEffect(() => { localStorage.setItem("shared_tasks", JSON.stringify(tasks)); }, [tasks]);
   useEffect(() => { localStorage.setItem("shared_forms", JSON.stringify(forms)); }, [forms]);
   useEffect(() => { localStorage.setItem("shared_project_files", JSON.stringify(projectFiles)); }, [projectFiles]);
+  useEffect(() => { localStorage.setItem("shared_activities", JSON.stringify(activities)); }, [activities]);
+
+  // Listen for cross-tab updates via BroadcastChannel
+  useEffect(() => {
+    if (!channel) return;
+    const handler = (e: MessageEvent) => {
+      const { type, data } = e.data;
+      if (type === "new_form") {
+        setForms(prev => {
+          if (prev.find(f => f.id === data.id)) return prev;
+          return [data, ...prev];
+        });
+      }
+      if (type === "new_activity") {
+        setActivities(prev => {
+          if (prev.find(a => a.id === data.id)) return prev;
+          return [data, ...prev].slice(0, 50);
+        });
+      }
+      if (type === "refresh_all") {
+        setPeople(getInitialPeople());
+        setCompanies(getInitialCompanies());
+        setForms(getInitialForms());
+        setActivities(getInitialActivities());
+        setProjectFiles(getInitialProjectFiles());
+      }
+    };
+    channel.addEventListener("message", handler);
+    return () => channel.removeEventListener("message", handler);
+  }, []);
+
+  // Update time-ago labels every 30s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActivities(prev => prev.map(a => ({ ...a, time: formatTimeAgo(a.timestamp) })));
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const refreshFromRegistrations = useCallback(() => {
     const users = getRegisteredUsers();
@@ -241,7 +314,6 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
       users.forEach(u => {
         const existing = updated.find(p => p.email === u.email);
         if (existing) {
-          // Sync name and avatar from user profile
           existing.name = u.fullName;
           if (u.avatarUrl) existing.avatar = u.avatarUrl;
           existing.phone = u.phone;
@@ -311,8 +383,20 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
     setProjects(prev => prev.filter(p => p.id !== id));
   }, []);
 
+  const addActivity = useCallback((activity: Omit<ActivityData, "id" | "time" | "timestamp">) => {
+    const newActivity: ActivityData = {
+      ...activity,
+      id: crypto.randomUUID(),
+      time: "Baru saja",
+      timestamp: Date.now(),
+    };
+    setActivities(prev => [newActivity, ...prev].slice(0, 50));
+    channel?.postMessage({ type: "new_activity", data: newActivity });
+  }, []);
+
   const addForm = useCallback((form: FormData) => {
     setForms(prev => [form, ...prev]);
+    channel?.postMessage({ type: "new_form", data: form });
   }, []);
 
   const addFileToProject = useCallback((projectName: string, file: FileData) => {
@@ -338,9 +422,9 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
 
   return (
     <SharedDataContext.Provider value={{
-      people, companies, projects, tasks, forms, projectFiles,
+      people, companies, projects, tasks, forms, projectFiles, activities,
       addPerson, updatePerson, deletePerson, addCompany, addProject, updateProject, deleteProject,
-      addForm, addFileToProject, refreshFromRegistrations, getFormCount,
+      addForm, addActivity, addFileToProject, refreshFromRegistrations, getFormCount,
     }}>
       {children}
     </SharedDataContext.Provider>
