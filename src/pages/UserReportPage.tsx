@@ -57,7 +57,7 @@ const UserReportPage = () => {
         materials: notes || "-",
         reporterName: currentUser.fullName,
         reporterPhone: currentUser.phone,
-        reporterAvatar: `https://i.pravatar.cc/150?u=${currentUser.email}`,
+        reporterAvatar: currentUser.avatarUrl || `https://i.pravatar.cc/150?u=${currentUser.email}`,
         reportPhotos: photos,
       });
 

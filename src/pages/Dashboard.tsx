@@ -56,26 +56,8 @@ const Dashboard = () => {
           </ScrollArea>
         </div>
 
-        <div className="bg-card rounded-lg border p-6">
-          <h3 className="text-base font-semibold text-foreground mb-4">Project Aktif</h3>
-          <div className="space-y-3">
-            {activeProjects.map((project) => (
-              <div key={project.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground truncate">{project.name}</p>
-                  <p className="text-xs text-muted-foreground">{project.company}</p>
-                </div>
-                <div className="flex items-center gap-4 ml-4">
-                  <div className="w-32 hidden sm:block">
-                    <Progress value={project.progress} className={`h-2 ${getProgressBarColor(project.progress)}`} />
-                  </div>
-                  <span className="text-sm font-medium text-foreground w-12 text-right">{project.progress}%</span>
-                  <StatusBadge status={project.status} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+
+
 
         <div className="bg-card rounded-lg border p-6">
           <h3 className="text-base font-semibold text-foreground mb-4">Aktivitas Terbaru</h3>

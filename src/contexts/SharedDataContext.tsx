@@ -90,6 +90,7 @@ interface SharedDataContextType {
   projectFiles: ProjectFileData[];
   addPerson: (person: PersonData) => void;
   updatePerson: (id: string, person: Partial<PersonData>) => void;
+  deletePerson: (id: string) => void;
   addCompany: (company: CompanyData) => void;
   addProject: (project: ProjectData) => void;
   updateProject: (id: string, project: Partial<ProjectData>) => void;
@@ -150,7 +151,11 @@ function getInitialPeople(): PersonData[] {
   const base = [...mockPeople] as PersonData[];
   const users = getRegisteredUsers();
   users.forEach(u => {
-    if (!base.find(p => p.email === u.email)) {
+    const existing = base.find(p => p.email === u.email);
+    if (existing) {
+      existing.name = u.fullName;
+      if (u.avatarUrl) existing.avatar = u.avatarUrl;
+    } else {
       base.push({
         id: u.id,
         name: u.fullName,
@@ -159,7 +164,7 @@ function getInitialPeople(): PersonData[] {
         company: u.company,
         jobTitle: u.position,
         role: "viewer",
-        avatar: `https://i.pravatar.cc/150?u=${u.email}`,
+        avatar: u.avatarUrl || `https://i.pravatar.cc/150?u=${u.email}`,
         progress: 0,
         startDate: new Date().toISOString().split("T")[0],
       });
@@ -234,7 +239,14 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
     setPeople(prev => {
       const updated = [...prev];
       users.forEach(u => {
-        if (!updated.find(p => p.email === u.email)) {
+        const existing = updated.find(p => p.email === u.email);
+        if (existing) {
+          // Sync name and avatar from user profile
+          existing.name = u.fullName;
+          if (u.avatarUrl) existing.avatar = u.avatarUrl;
+          existing.phone = u.phone;
+          existing.jobTitle = u.position || existing.jobTitle;
+        } else {
           updated.push({
             id: u.id,
             name: u.fullName,
@@ -243,7 +255,7 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
             company: u.company,
             jobTitle: u.position,
             role: "viewer",
-            avatar: `https://i.pravatar.cc/150?u=${u.email}`,
+            avatar: u.avatarUrl || `https://i.pravatar.cc/150?u=${u.email}`,
             progress: 0,
             startDate: new Date().toISOString().split("T")[0],
           });
@@ -277,6 +289,10 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
 
   const updatePerson = useCallback((id: string, data: Partial<PersonData>) => {
     setPeople(prev => prev.map(p => p.id === id ? { ...p, ...data } : p));
+  }, []);
+
+  const deletePerson = useCallback((id: string) => {
+    setPeople(prev => prev.filter(p => p.id !== id));
   }, []);
 
   const addCompany = useCallback((company: CompanyData) => {
@@ -323,7 +339,7 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
   return (
     <SharedDataContext.Provider value={{
       people, companies, projects, tasks, forms, projectFiles,
-      addPerson, updatePerson, addCompany, addProject, updateProject, deleteProject,
+      addPerson, updatePerson, deletePerson, addCompany, addProject, updateProject, deleteProject,
       addForm, addFileToProject, refreshFromRegistrations, getFormCount,
     }}>
       {children}

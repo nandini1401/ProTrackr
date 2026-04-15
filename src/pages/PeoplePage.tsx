@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Plus, Search, Mail, Phone, Pencil } from "lucide-react";
+import { Plus, Search, Mail, Phone, Pencil, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { PersonData } from "@/contexts/SharedDataContext";
@@ -27,7 +27,7 @@ const roleLabels: Record<string, string> = {
 };
 
 const PeoplePage = () => {
-  const { people, addPerson, updatePerson, refreshFromRegistrations } = useSharedData();
+  const { people, addPerson, updatePerson, deletePerson, refreshFromRegistrations } = useSharedData();
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -147,9 +147,14 @@ const PeoplePage = () => {
                   <h3 className="font-semibold text-foreground truncate">{person.name}</h3>
                   <p className="text-sm text-muted-foreground">{person.jobTitle}</p>
                 </div>
-                <button onClick={() => { setEditingPerson(person); setEditDialogOpen(true); }} className="text-muted-foreground hover:text-primary p-1">
-                  <Pencil className="h-4 w-4" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => { setEditingPerson(person); setEditDialogOpen(true); }} className="text-muted-foreground hover:text-primary p-1">
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); if (confirm(`Hapus ${person.name}?`)) { deletePerson(person.id); toast.success("Berhasil dihapus"); } }} className="text-muted-foreground hover:text-destructive p-1">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
               <div className="space-y-1 text-sm">
                 <p className="text-muted-foreground">{person.company}</p>

@@ -59,12 +59,7 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r-0">
       <div className="flex h-16 items-center gap-2 px-4 border-b border-sidebar-border">
-        <img src="/logo-protrackr.png" alt="ProTrackr" className="h-8 w-auto" />
-        {!collapsed && (
-          <span className="text-lg font-semibold text-sidebar-accent-foreground">
-            ProTrackr
-          </span>
-        )}
+        <img src="/logo-protrackr.png" alt="ProTrackr" className="h-12 w-auto" />
       </div>
 
       <SidebarContent className="pt-4">
