@@ -58,7 +58,7 @@ const LoginPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
-          <img src="/logo-protrackr.png" alt="ProTrackr" className="mx-auto h-16 w-auto" />
+          <img src="/logo-protrackr.png" alt="ProTrackr" className="mx-auto h-20 w-auto" />
           <p className="text-sm text-muted-foreground">Sistem Informasi Laporan Harian Project</p>
         </div>
 
