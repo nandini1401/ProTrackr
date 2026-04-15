@@ -3,7 +3,6 @@ import {
   History,
   User,
   LogOut,
-  FileText,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -85,8 +84,12 @@ export function UserSidebar() {
 
       <SidebarFooter className="border-t border-sidebar-border p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sidebar-accent">
-            <span className="text-xs font-medium text-sidebar-accent-foreground">{initials}</span>
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sidebar-accent overflow-hidden shrink-0">
+            {currentUser?.avatarUrl ? (
+              <img src={currentUser.avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-xs font-medium text-sidebar-accent-foreground">{initials}</span>
+            )}
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
