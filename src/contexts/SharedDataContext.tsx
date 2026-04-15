@@ -151,7 +151,11 @@ function getInitialPeople(): PersonData[] {
   const base = [...mockPeople] as PersonData[];
   const users = getRegisteredUsers();
   users.forEach(u => {
-    if (!base.find(p => p.email === u.email)) {
+    const existing = base.find(p => p.email === u.email);
+    if (existing) {
+      existing.name = u.fullName;
+      if (u.avatarUrl) existing.avatar = u.avatarUrl;
+    } else {
       base.push({
         id: u.id,
         name: u.fullName,
@@ -160,7 +164,7 @@ function getInitialPeople(): PersonData[] {
         company: u.company,
         jobTitle: u.position,
         role: "viewer",
-        avatar: `https://i.pravatar.cc/150?u=${u.email}`,
+        avatar: u.avatarUrl || `https://i.pravatar.cc/150?u=${u.email}`,
         progress: 0,
         startDate: new Date().toISOString().split("T")[0],
       });
