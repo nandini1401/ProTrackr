@@ -61,7 +61,7 @@ const LoginPage = () => {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
             <FileText className="h-6 w-6 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">ProjectLog</h1>
+          <h1 className="text-2xl font-bold text-foreground">ProTrackr</h1>
           <p className="text-sm text-muted-foreground">Sistem Informasi Laporan Harian Project</p>
         </div>
 
@@ -128,7 +128,7 @@ const LoginPage = () => {
             </Link>
           </p>
           <p className="text-xs text-muted-foreground">
-            Admin — Username: Admin · Password: Admin2026
+            {" "}
           </p>
         </div>
       </div>
