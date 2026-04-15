@@ -9,6 +9,7 @@ export interface RegisteredUser {
   company: string;
   project: string;
   password: string;
+  avatarUrl?: string;
 }
 
 interface AuthContextType {
@@ -19,6 +20,7 @@ interface AuthContextType {
   logout: () => void;
   register: (user: Omit<RegisteredUser, "id">) => boolean;
   getRegisteredUsers: () => RegisteredUser[];
+  updateCurrentUser: (updates: Partial<RegisteredUser>) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -29,6 +31,7 @@ const AuthContext = createContext<AuthContextType>({
   logout: () => {},
   register: () => false,
   getRegisteredUsers: () => [],
+  updateCurrentUser: () => {},
 });
 
 function getStoredUsers(): RegisteredUser[] {
@@ -57,7 +60,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return false;
     } else {
-      // User login by email + password
       const users = getStoredUsers();
       const found = users.find(u => u.email === username && u.password === password);
       if (found) {
@@ -91,10 +93,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
+  const updateCurrentUser = (updates: Partial<RegisteredUser>) => {
+    if (!currentUser) return;
+    const updated = { ...currentUser, ...updates };
+    setCurrentUser(updated);
+    sessionStorage.setItem("current_user", JSON.stringify(updated));
+    // Also update in registered_users localStorage
+    const users = getStoredUsers();
+    const idx = users.findIndex(u => u.id === currentUser.id);
+    if (idx !== -1) {
+      users[idx] = { ...users[idx], ...updates };
+      localStorage.setItem("registered_users", JSON.stringify(users));
+    }
+  };
+
   const getRegisteredUsers = () => getStoredUsers();
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, role, currentUser, login, logout, register, getRegisteredUsers }}>
+    <AuthContext.Provider value={{ isAuthenticated, role, currentUser, login, logout, register, getRegisteredUsers, updateCurrentUser }}>
       {children}
     </AuthContext.Provider>
   );
