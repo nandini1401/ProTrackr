@@ -26,21 +26,24 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, role } = useAuth();
+  const { isAuthenticated, role, loading } = useAuth();
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><p>Loading...</p></div>;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (role !== "admin") return <Navigate to="/user" replace />;
   return <>{children}</>;
 }
 
 function UserRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, role } = useAuth();
+  const { isAuthenticated, role, loading } = useAuth();
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><p>Loading...</p></div>;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (role !== "user") return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, role } = useAuth();
+  const { isAuthenticated, role, loading } = useAuth();
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><p>Loading...</p></div>;
   if (isAuthenticated) return <Navigate to={role === "admin" ? "/" : "/user"} replace />;
   return <>{children}</>;
 }
