@@ -1,0 +1,145 @@
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { FileText, Eye, EyeOff } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { projects } from "@/lib/mockData";
+
+const RegisterPage = () => {
+  const navigate = useNavigate();
+  const { register } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [form, setForm] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    position: "",
+    company: "",
+    project: "",
+    password: "",
+    confirmPassword: "",
+  });
+
+  const handleChange = (field: string, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (form.password.length < 6) {
+      toast.error("Password minimal 6 karakter");
+      return;
+    }
+    if (form.password !== form.confirmPassword) {
+      toast.error("Konfirmasi password tidak cocok");
+      return;
+    }
+    setLoading(true);
+    setTimeout(() => {
+      const success = register({
+        fullName: form.fullName,
+        email: form.email,
+        phone: form.phone,
+        position: form.position,
+        company: form.company,
+        project: form.project,
+        password: form.password,
+      });
+      setLoading(false);
+      if (success) {
+        toast.success("Pendaftaran berhasil! Silakan login.");
+        navigate("/login");
+      } else {
+        toast.error("Email sudah terdaftar");
+      }
+    }, 500);
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md space-y-6">
+        <div className="text-center space-y-2">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
+            <FileText className="h-6 w-6 text-primary-foreground" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">Daftar Akun Baru</h1>
+          <p className="text-sm text-muted-foreground">Daftar sebagai pekerja / user baru</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="bg-card rounded-lg border p-6 space-y-4">
+          <div className="space-y-2">
+            <Label>Nama Lengkap</Label>
+            <Input placeholder="Nama lengkap" value={form.fullName} onChange={(e) => handleChange("fullName", e.target.value)} required />
+          </div>
+          <div className="space-y-2">
+            <Label>Email</Label>
+            <Input type="email" placeholder="email@contoh.com" value={form.email} onChange={(e) => handleChange("email", e.target.value)} required />
+          </div>
+          <div className="space-y-2">
+            <Label>Nomor HP</Label>
+            <Input placeholder="+62 812 xxxx xxxx" value={form.phone} onChange={(e) => handleChange("phone", e.target.value)} required />
+          </div>
+          <div className="space-y-2">
+            <Label>Posisi / Jabatan</Label>
+            <Input placeholder="Contoh: Site Engineer" value={form.position} onChange={(e) => handleChange("position", e.target.value)} required />
+          </div>
+          <div className="space-y-2">
+            <Label>Dari Perusahaan</Label>
+            <Input placeholder="Nama perusahaan" value={form.company} onChange={(e) => handleChange("company", e.target.value)} required />
+          </div>
+          <div className="space-y-2">
+            <Label>Project yang Dipegang</Label>
+            <Select value={form.project} onValueChange={(v) => handleChange("project", v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Pilih project" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.map((p) => (
+                  <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Password</Label>
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="Minimal 6 karakter"
+                value={form.password}
+                onChange={(e) => handleChange("password", e.target.value)}
+                required
+              />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Konfirmasi Password</Label>
+            <Input type="password" placeholder="Ulangi password" value={form.confirmPassword} onChange={(e) => handleChange("confirmPassword", e.target.value)} required />
+          </div>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Mendaftar..." : "Daftar"}
+          </Button>
+        </form>
+
+        <p className="text-center text-sm text-muted-foreground">
+          Sudah punya akun?{" "}
+          <Link to="/login" className="text-primary hover:underline font-medium">
+            Login di sini
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+};
+
+export default RegisterPage;
