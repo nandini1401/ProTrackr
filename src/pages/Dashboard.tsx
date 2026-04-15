@@ -1,23 +1,14 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
-import { StatusBadge } from "@/components/StatusBadge";
 import { useSharedData } from "@/contexts/SharedDataContext";
-import { recentActivities } from "@/lib/mockData";
 import { FolderKanban, FileText, Users, TrendingUp } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
-function getProgressBarColor(progress: number) {
-  if (progress >= 100) return "[&>div]:bg-primary";
-  if (progress >= 50) return "[&>div]:bg-warning";
-  return "[&>div]:bg-destructive";
-}
-
 const Dashboard = () => {
-  const { projects, forms, tasks, people } = useSharedData();
+  const { projects, forms, tasks, people, activities } = useSharedData();
 
   const activeProjects = projects.filter(p => p.status !== "completed");
   const avgProgress = projects.length ? Math.round(projects.reduce((a, p) => a + p.progress, 0) / projects.length) : 0;
@@ -56,22 +47,27 @@ const Dashboard = () => {
           </ScrollArea>
         </div>
 
-
-
-
         <div className="bg-card rounded-lg border p-6">
           <h3 className="text-base font-semibold text-foreground mb-4">Aktivitas Terbaru</h3>
-          <div className="space-y-4">
-            {recentActivities.map((activity, i) => (
-              <div key={i} className="flex gap-3">
-                <div className="mt-1.5 h-2 w-2 rounded-full bg-primary flex-shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-sm text-foreground">{activity.action}</p>
-                  <p className="text-xs text-muted-foreground">{activity.project} · {activity.user} · {activity.time}</p>
+          {activities.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Belum ada aktivitas</p>
+          ) : (
+            <div className="space-y-4">
+              {activities.slice(0, 10).map((activity) => (
+                <div key={activity.id} className="flex gap-3 items-start">
+                  {activity.userAvatar ? (
+                    <img src={activity.userAvatar} alt="" className="mt-0.5 h-7 w-7 rounded-full object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="mt-1.5 h-2 w-2 rounded-full bg-primary flex-shrink-0" />
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm text-foreground">{activity.action}</p>
+                    <p className="text-xs text-muted-foreground">{activity.project} · {activity.user} · {activity.time}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </DashboardLayout>
