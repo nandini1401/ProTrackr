@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { companies as mockCompanies, people as mockPeople, projects as mockProjects, tasks as mockTasks, forms as mockForms, projectFiles as mockProjectFiles } from "@/lib/mockData";
-import { UserProfile } from "@/contexts/AuthContext";
+
 
 // Types
 export interface PersonData {
@@ -148,7 +148,7 @@ function getInitialProjectFiles(): ProjectFileData[] {
   return mockProjectFiles;
 }
 
-function getRegisteredUsers(): RegisteredUser[] {
+function getRegisteredUsers(): Array<{ id: string; fullName: string; email: string; phone: string; position: string; company: string; project: string; avatarUrl?: string }> {
   try {
     return JSON.parse(localStorage.getItem("registered_users") || "[]");
   } catch { return []; }
