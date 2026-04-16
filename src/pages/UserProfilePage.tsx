@@ -1,14 +1,19 @@
 import { useState, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserLayout } from "@/components/UserLayout";
-import { User, Mail, Phone, Briefcase, Building2, FolderKanban, Camera, Pencil, Check, X } from "lucide-react";
+import { User, Mail, Phone, Briefcase, Building2, FolderKanban, Camera, Pencil, Check, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const UserProfilePage = () => {
-  const { currentUser, updateCurrentUser } = useAuth();
+  const { currentUser, updateCurrentUser, logout } = useAuth();
+  const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [form, setForm] = useState({
     fullName: currentUser?.fullName || "",
     phone: currentUser?.phone || "",
@@ -142,6 +147,54 @@ const UserProfilePage = () => {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Delete Account */}
+        <div className="bg-card rounded-2xl border border-destructive/20 shadow-sm p-6">
+          <h3 className="font-semibold text-destructive mb-2">Hapus Akun</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Akun Anda akan dihapus secara permanen beserta semua data. Tindakan ini tidak dapat dibatalkan.
+          </p>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" disabled={deleting}>
+                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                {deleting ? "Menghapus..." : "Hapus Akun Permanen"}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Hapus Akun Permanen?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Semua data Anda termasuk profil, laporan, dan riwayat akan dihapus secara permanen. Tindakan ini TIDAK BISA dibatalkan.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Batal</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={async () => {
+                    setDeleting(true);
+                    try {
+                      const { data: { session } } = await supabase.auth.getSession();
+                      const res = await supabase.functions.invoke("delete-account", {
+                        headers: { Authorization: `Bearer ${session?.access_token}` },
+                      });
+                      if (res.error) throw new Error(res.error.message);
+                      toast.success("Akun berhasil dihapus");
+                      logout();
+                      navigate("/login");
+                    } catch (err: any) {
+                      toast.error("Gagal menghapus akun: " + (err.message || "Unknown error"));
+                      setDeleting(false);
+                    }
+                  }}
+                >
+                  Ya, Hapus Permanen
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </UserLayout>
