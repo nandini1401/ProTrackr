@@ -448,7 +448,8 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
     <SharedDataContext.Provider value={{
       people, companies, projects, tasks, forms, projectFiles, activities,
       addPerson, updatePerson, deletePerson, addCompany, addProject, updateProject, deleteProject,
-      addForm, addActivity, addFileToProject, refreshFromRegistrations, getFormCount,
+      addForm, updateForm, deleteForm, deleteCompany, deleteTask,
+      addActivity, addFileToProject, refreshFromRegistrations, getFormCount,
     }}>
       {children}
     </SharedDataContext.Provider>
