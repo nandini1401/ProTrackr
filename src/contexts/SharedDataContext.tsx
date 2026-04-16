@@ -107,6 +107,10 @@ interface SharedDataContextType {
   updateProject: (id: string, project: Partial<ProjectData>) => void;
   deleteProject: (id: string) => void;
   addForm: (form: FormData) => void;
+  updateForm: (id: string, data: Partial<FormData>) => void;
+  deleteForm: (id: string) => void;
+  deleteCompany: (id: string) => void;
+  deleteTask: (id: string) => void;
   addActivity: (activity: Omit<ActivityData, "id" | "time" | "timestamp">) => void;
   addFileToProject: (projectName: string, file: FileData) => void;
   refreshFromRegistrations: () => void;
