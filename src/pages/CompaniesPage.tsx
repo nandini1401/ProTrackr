@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Search, Phone, Mail, Globe, Users } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Plus, Search, Phone, Mail, Globe, Users, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 const CompaniesPage = () => {
-  const { companies, people, addCompany, refreshFromRegistrations } = useSharedData();
+  const { companies, people, addCompany, deleteCompany, refreshFromRegistrations } = useSharedData();
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -21,7 +22,6 @@ const CompaniesPage = () => {
       c.lineOfBusiness.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Calculate live employee counts
   const getEmployeeCount = (companyName: string) =>
     people.filter(p => p.company.toLowerCase() === companyName.toLowerCase()).length;
 
@@ -39,6 +39,11 @@ const CompaniesPage = () => {
     });
     setDialogOpen(false);
     toast.success("Perusahaan berhasil ditambahkan");
+  };
+
+  const handleDelete = (id: string, name: string) => {
+    deleteCompany(id);
+    toast.success(`Perusahaan "${name}" berhasil dihapus`);
   };
 
   return (
@@ -70,20 +75,33 @@ const CompaniesPage = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((company) => (
             <div key={company.id} className="bg-card rounded-lg border p-5 space-y-3 hover:shadow-md transition-shadow">
-              <div>
-                <h3 className="font-semibold text-foreground">{company.name}</h3>
-                <p className="text-sm text-muted-foreground">{company.lineOfBusiness}</p>
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="font-semibold text-foreground">{company.name}</h3>
+                  <p className="text-sm text-muted-foreground">{company.lineOfBusiness}</p>
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Hapus Perusahaan?</AlertDialogTitle>
+                      <AlertDialogDescription>Data "{company.name}" akan dihapus permanen.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Batal</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleDelete(company.id, company.name)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Hapus</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
               <div className="space-y-1.5 text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Phone className="h-3.5 w-3.5" /><span>{company.phone}</span>
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Mail className="h-3.5 w-3.5" /><span>{company.email}</span>
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Globe className="h-3.5 w-3.5" /><span>{company.website}</span>
-                </div>
+                <div className="flex items-center gap-2 text-muted-foreground"><Phone className="h-3.5 w-3.5" /><span>{company.phone}</span></div>
+                <div className="flex items-center gap-2 text-muted-foreground"><Mail className="h-3.5 w-3.5" /><span>{company.email}</span></div>
+                <div className="flex items-center gap-2 text-muted-foreground"><Globe className="h-3.5 w-3.5" /><span>{company.website}</span></div>
               </div>
               <div className="flex items-center gap-2 text-sm pt-2 border-t">
                 <Users className="h-4 w-4 text-primary" />

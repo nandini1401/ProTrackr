@@ -107,6 +107,10 @@ interface SharedDataContextType {
   updateProject: (id: string, project: Partial<ProjectData>) => void;
   deleteProject: (id: string) => void;
   addForm: (form: FormData) => void;
+  updateForm: (id: string, data: Partial<FormData>) => void;
+  deleteForm: (id: string) => void;
+  deleteCompany: (id: string) => void;
+  deleteTask: (id: string) => void;
   addActivity: (activity: Omit<ActivityData, "id" | "time" | "timestamp">) => void;
   addFileToProject: (projectName: string, file: FileData) => void;
   refreshFromRegistrations: () => void;
@@ -399,6 +403,26 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
     channel?.postMessage({ type: "new_form", data: form });
   }, []);
 
+  const updateForm = useCallback((id: string, data: Partial<FormData>) => {
+    setForms(prev => prev.map(f => f.id === id ? { ...f, ...data } : f));
+    channel?.postMessage({ type: "refresh_all" });
+  }, []);
+
+  const deleteForm = useCallback((id: string) => {
+    setForms(prev => prev.filter(f => f.id !== id));
+    channel?.postMessage({ type: "refresh_all" });
+  }, []);
+
+  const deleteCompany = useCallback((id: string) => {
+    setCompanies(prev => prev.filter(c => c.id !== id));
+    channel?.postMessage({ type: "refresh_all" });
+  }, []);
+
+  const deleteTask = useCallback((id: string) => {
+    setTasks(prev => prev.filter(t => t.id !== id));
+    channel?.postMessage({ type: "refresh_all" });
+  }, []);
+
   const addFileToProject = useCallback((projectName: string, file: FileData) => {
     setProjectFiles(prev => {
       const updated = [...prev];
@@ -424,7 +448,8 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
     <SharedDataContext.Provider value={{
       people, companies, projects, tasks, forms, projectFiles, activities,
       addPerson, updatePerson, deletePerson, addCompany, addProject, updateProject, deleteProject,
-      addForm, addActivity, addFileToProject, refreshFromRegistrations, getFormCount,
+      addForm, updateForm, deleteForm, deleteCompany, deleteTask,
+      addActivity, addFileToProject, refreshFromRegistrations, getFormCount,
     }}>
       {children}
     </SharedDataContext.Provider>
