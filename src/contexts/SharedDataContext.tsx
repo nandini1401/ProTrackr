@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { companies as mockCompanies, people as mockPeople, projects as mockProjects, tasks as mockTasks, forms as mockForms, projectFiles as mockProjectFiles } from "@/lib/mockData";
+import { supabase } from "@/integrations/supabase/client";
 
 
 // Types
@@ -367,8 +368,9 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
     setPeople(prev => prev.map(p => p.id === id ? { ...p, ...data } : p));
   }, []);
 
-  const deletePerson = useCallback((id: string) => {
+  const deletePerson = useCallback(async (id: string) => {
     setPeople(prev => prev.filter(p => p.id !== id));
+    await supabase.from("people").delete().eq("id", id);
   }, []);
 
   const addCompany = useCallback((company: CompanyData) => {
@@ -383,8 +385,9 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
     setProjects(prev => prev.map(p => p.id === id ? { ...p, ...data } : p));
   }, []);
 
-  const deleteProject = useCallback((id: string) => {
+  const deleteProject = useCallback(async (id: string) => {
     setProjects(prev => prev.filter(p => p.id !== id));
+    await supabase.from("projects").delete().eq("id", id);
   }, []);
 
   const addActivity = useCallback((activity: Omit<ActivityData, "id" | "time" | "timestamp">) => {
@@ -408,19 +411,22 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
     channel?.postMessage({ type: "refresh_all" });
   }, []);
 
-  const deleteForm = useCallback((id: string) => {
+  const deleteForm = useCallback(async (id: string) => {
     setForms(prev => prev.filter(f => f.id !== id));
     channel?.postMessage({ type: "refresh_all" });
+    await supabase.from("forms").delete().eq("id", id);
   }, []);
 
-  const deleteCompany = useCallback((id: string) => {
+  const deleteCompany = useCallback(async (id: string) => {
     setCompanies(prev => prev.filter(c => c.id !== id));
     channel?.postMessage({ type: "refresh_all" });
+    await supabase.from("companies").delete().eq("id", id);
   }, []);
 
-  const deleteTask = useCallback((id: string) => {
+  const deleteTask = useCallback(async (id: string) => {
     setTasks(prev => prev.filter(t => t.id !== id));
     channel?.postMessage({ type: "refresh_all" });
+    await supabase.from("tasks").delete().eq("id", id);
   }, []);
 
   const addFileToProject = useCallback((projectName: string, file: FileData) => {
