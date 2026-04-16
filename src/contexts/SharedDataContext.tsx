@@ -403,6 +403,26 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
     channel?.postMessage({ type: "new_form", data: form });
   }, []);
 
+  const updateForm = useCallback((id: string, data: Partial<FormData>) => {
+    setForms(prev => prev.map(f => f.id === id ? { ...f, ...data } : f));
+    channel?.postMessage({ type: "refresh_all" });
+  }, []);
+
+  const deleteForm = useCallback((id: string) => {
+    setForms(prev => prev.filter(f => f.id !== id));
+    channel?.postMessage({ type: "refresh_all" });
+  }, []);
+
+  const deleteCompany = useCallback((id: string) => {
+    setCompanies(prev => prev.filter(c => c.id !== id));
+    channel?.postMessage({ type: "refresh_all" });
+  }, []);
+
+  const deleteTask = useCallback((id: string) => {
+    setTasks(prev => prev.filter(t => t.id !== id));
+    channel?.postMessage({ type: "refresh_all" });
+  }, []);
+
   const addFileToProject = useCallback((projectName: string, file: FileData) => {
     setProjectFiles(prev => {
       const updated = [...prev];
