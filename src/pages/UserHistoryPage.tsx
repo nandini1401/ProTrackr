@@ -1,7 +1,15 @@
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSharedData } from "@/contexts/SharedDataContext";
 import { UserLayout } from "@/components/UserLayout";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Calendar, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { FileText, Calendar, Clock, Trash2, Pencil, Camera, Save } from "lucide-react";
+import { toast } from "sonner";
 
 interface UserReport {
   id: string;
@@ -19,11 +27,99 @@ function getUserReports(userId: string): UserReport[] {
   } catch { return []; }
 }
 
+function saveUserReports(userId: string, reports: UserReport[]) {
+  localStorage.setItem(`user_reports_${userId}`, JSON.stringify(reports));
+}
+
 const UserHistoryPage = () => {
   const { currentUser } = useAuth();
+  const { forms, updateForm, deleteForm, addActivity } = useSharedData();
+  const [reports, setReports] = useState<UserReport[]>(() => currentUser ? getUserReports(currentUser.id) : []);
+  const [editingReport, setEditingReport] = useState<UserReport | null>(null);
+  const [editWork, setEditWork] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [editPhotos, setEditPhotos] = useState<string[]>([]);
+
   if (!currentUser) return null;
 
-  const reports = getUserReports(currentUser.id);
+  const handleDelete = (report: UserReport) => {
+    const updated = reports.filter(r => r.id !== report.id);
+    setReports(updated);
+    saveUserReports(currentUser.id, updated);
+
+    // Also delete from shared forms (admin side)
+    if (report.formNumber) {
+      const matchingForm = forms.find(f => f.formNumber === report.formNumber);
+      if (matchingForm) {
+        deleteForm(matchingForm.id);
+      }
+    }
+
+    addActivity({
+      action: `Laporan ${report.formNumber || ''} dihapus oleh user`,
+      project: currentUser.project,
+      user: currentUser.fullName,
+      userAvatar: currentUser.avatarUrl,
+    });
+
+    toast.success("Laporan berhasil dihapus");
+  };
+
+  const openEdit = (report: UserReport) => {
+    setEditingReport(report);
+    setEditWork(report.workDescription);
+    setEditNotes(report.notes);
+    setEditPhotos([...report.photos]);
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        if (ev.target?.result) {
+          setEditPhotos((prev) => [...prev, ev.target!.result as string]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingReport) return;
+
+    const updated = reports.map(r => {
+      if (r.id === editingReport.id) {
+        return { ...r, workDescription: editWork, notes: editNotes, photos: editPhotos };
+      }
+      return r;
+    });
+    setReports(updated);
+    saveUserReports(currentUser.id, updated);
+
+    // Sync edit to shared forms (admin side)
+    if (editingReport.formNumber) {
+      const matchingForm = forms.find(f => f.formNumber === editingReport.formNumber);
+      if (matchingForm) {
+        updateForm(matchingForm.id, {
+          workToday: editWork,
+          materials: editNotes || "-",
+          reportPhotos: editPhotos,
+        });
+      }
+    }
+
+    addActivity({
+      action: `Laporan ${editingReport.formNumber || ''} diedit oleh user`,
+      project: currentUser.project,
+      user: currentUser.fullName,
+      userAvatar: currentUser.avatarUrl,
+    });
+
+    setEditingReport(null);
+    toast.success("Laporan berhasil diperbarui");
+  };
 
   return (
     <UserLayout title="Riwayat Laporan">
@@ -67,7 +163,28 @@ const UserHistoryPage = () => {
                       <Badge variant="outline" className="text-xs">{report.formNumber}</Badge>
                     )}
                   </div>
-                  <Badge variant="outline" className="bg-success/10 text-success border-success/20">Terkirim</Badge>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => openEdit(report)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Hapus Laporan?</AlertDialogTitle>
+                          <AlertDialogDescription>Laporan ini akan dihapus permanen dari riwayat Anda dan dari admin.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Batal</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(report)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Hapus</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
                 <p className="text-sm text-foreground leading-relaxed">{report.workDescription}</p>
                 {report.notes && (
@@ -87,6 +204,48 @@ const UserHistoryPage = () => {
             ))}
           </div>
         )}
+
+        {/* Edit Dialog */}
+        <Dialog open={!!editingReport} onOpenChange={(open) => !open && setEditingReport(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader><DialogTitle>Edit Laporan {editingReport?.formNumber}</DialogTitle></DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Deskripsi Pekerjaan</Label>
+                <Textarea value={editWork} onChange={(e) => setEditWork(e.target.value)} rows={4} className="rounded-xl resize-none" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Foto</Label>
+                <div className="flex flex-wrap gap-2">
+                  {editPhotos.map((photo, i) => (
+                    <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border group">
+                      <img src={photo} alt={`foto-${i}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setEditPhotos(prev => prev.filter((_, idx) => idx !== i))}
+                        className="absolute inset-0 bg-destructive/80 text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs font-bold"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  ))}
+                  <label className="w-20 h-20 rounded-xl border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-all">
+                    <Camera className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-[9px] text-muted-foreground">Tambah</span>
+                    <input type="file" accept="image/*" multiple onChange={handlePhotoUpload} className="hidden" />
+                  </label>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Catatan</Label>
+                <Textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} rows={2} className="rounded-xl resize-none" />
+              </div>
+              <Button onClick={handleSaveEdit} className="w-full">
+                <Save className="h-4 w-4 mr-2" />Simpan Perubahan
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </UserLayout>
   );

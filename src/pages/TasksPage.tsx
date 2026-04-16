@@ -5,8 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Calendar, Filter } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Search, Calendar, Filter, Trash2 } from "lucide-react";
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
 
 const statusConfig = {
   planned: { label: "Belum Mulai", className: "bg-muted text-muted-foreground border-border" },
@@ -15,7 +17,7 @@ const statusConfig = {
 };
 
 const TasksPage = () => {
-  const { tasks } = useSharedData();
+  const { tasks, deleteTask } = useSharedData();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState("");
@@ -34,10 +36,14 @@ const TasksPage = () => {
     });
   }, [search, statusFilter, dateFrom, dateTo]);
 
+  const handleDelete = (id: string, title: string) => {
+    deleteTask(id);
+    toast.success(`Task "${title}" berhasil dihapus`);
+  };
+
   return (
     <DashboardLayout title="Tasks">
       <div className="space-y-4">
-        {/* Filters */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -63,7 +69,6 @@ const TasksPage = () => {
           </div>
         </div>
 
-        {/* Task Cards */}
         <div className="space-y-3">
           {filtered.map((task) => (
             <div key={task.id} className="bg-card rounded-lg border p-4 hover:shadow-md transition-shadow">
@@ -79,6 +84,23 @@ const TasksPage = () => {
                   <Badge variant="outline" className={statusConfig[task.status].className}>
                     {statusConfig[task.status].label}
                   </Badge>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Hapus Task?</AlertDialogTitle>
+                        <AlertDialogDescription>Task "{task.title}" akan dihapus permanen.</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(task.id, task.title)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Hapus</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
               <div className="mt-3 flex items-center gap-4">

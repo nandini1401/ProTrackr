@@ -2,11 +2,14 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useSharedData } from "@/contexts/SharedDataContext";
-import { Search } from "lucide-react";
+import { Search, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
 
 const templateColors: Record<string, string> = {
   "Laporan Harian": "bg-primary/10 text-primary border-primary/20",
@@ -15,7 +18,7 @@ const templateColors: Record<string, string> = {
 };
 
 const FormsPage = () => {
-  const { forms } = useSharedData();
+  const { forms, deleteForm } = useSharedData();
   const [search, setSearch] = useState("");
   const [selectedForm, setSelectedForm] = useState<typeof forms[0] | null>(null);
 
@@ -26,6 +29,12 @@ const FormsPage = () => {
       f.workToday.toLowerCase().includes(search.toLowerCase()) ||
       f.reporterName.toLowerCase().includes(search.toLowerCase())
   );
+
+  const handleDelete = (e: React.MouseEvent, id: string, formNumber: string) => {
+    e.stopPropagation();
+    deleteForm(id);
+    toast.success(`Laporan "${formNumber}" berhasil dihapus`);
+  };
 
   return (
     <DashboardLayout title="Forms - Laporan Harian">
@@ -48,6 +57,7 @@ const FormsPage = () => {
                 <th className="p-3 text-sm font-medium text-muted-foreground hidden md:table-cell">Pekerjaan Hari Ini</th>
                 <th className="p-3 text-sm font-medium text-muted-foreground">Foto</th>
                 <th className="p-3 text-sm font-medium text-muted-foreground">Status</th>
+                <th className="p-3 text-sm font-medium text-muted-foreground">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -80,6 +90,25 @@ const FormsPage = () => {
                     )}
                   </td>
                   <td className="p-3"><StatusBadge status={form.status} /></td>
+                  <td className="p-3">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={(e) => e.stopPropagation()}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Hapus Laporan?</AlertDialogTitle>
+                          <AlertDialogDescription>Laporan "{form.formNumber}" akan dihapus permanen.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Batal</AlertDialogCancel>
+                          <AlertDialogAction onClick={(e) => handleDelete(e, form.id, form.formNumber)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Hapus</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </td>
                 </tr>
               ))}
             </tbody>
