@@ -1,7 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
-import { companies as mockCompanies, people as mockPeople, projects as mockProjects, tasks as mockTasks, forms as mockForms, projectFiles as mockProjectFiles } from "@/lib/mockData";
 import { supabase } from "@/integrations/supabase/client";
-
 
 // Types
 export interface PersonData {
@@ -9,7 +7,8 @@ export interface PersonData {
   name: string;
   email: string;
   phone: string;
-  company: string;
+  company: string; // resolved name
+  companyId?: string | null;
   jobTitle: string;
   role: string;
   avatar: string;
@@ -32,6 +31,7 @@ export interface ProjectData {
   name: string;
   description: string;
   company: string;
+  companyId?: string | null;
   startDate: string;
   endDate: string;
   progress: number;
@@ -44,6 +44,7 @@ export interface TaskData {
   projectName: string;
   title: string;
   assignee: string;
+  assigneeId?: string | null;
   status: "planned" | "wip" | "completed";
   startDate: string;
   endDate: string;
@@ -54,6 +55,7 @@ export interface FormData {
   id: string;
   formNumber: string;
   project: string;
+  projectId?: string;
   templateType: "Laporan Harian" | "Laporan Kendala" | "Izin Kerja";
   date: string;
   status: "draft" | "submitted" | "closed";
@@ -65,6 +67,7 @@ export interface FormData {
   reporterPhone: string;
   reporterAvatar: string;
   reportPhotos: string[];
+  submittedBy?: string | null;
 }
 
 export interface FileData {
@@ -100,146 +103,31 @@ interface SharedDataContextType {
   forms: FormData[];
   projectFiles: ProjectFileData[];
   activities: ActivityData[];
-  addPerson: (person: PersonData) => void;
-  updatePerson: (id: string, person: Partial<PersonData>) => void;
-  deletePerson: (id: string) => void;
-  addCompany: (company: CompanyData) => void;
-  addProject: (project: ProjectData) => void;
-  updateProject: (id: string, project: Partial<ProjectData>) => void;
-  deleteProject: (id: string) => void;
-  addForm: (form: FormData) => void;
-  updateForm: (id: string, data: Partial<FormData>) => void;
-  deleteForm: (id: string) => void;
-  deleteCompany: (id: string) => void;
-  deleteTask: (id: string) => void;
+  loading: boolean;
+  addPerson: (person: Omit<PersonData, "id">) => Promise<void>;
+  updatePerson: (id: string, person: Partial<PersonData>) => Promise<void>;
+  deletePerson: (id: string) => Promise<void>;
+  addCompany: (company: Omit<CompanyData, "id" | "employeeCount">) => Promise<void>;
+  addProject: (project: Omit<ProjectData, "id">) => Promise<void>;
+  updateProject: (id: string, project: Partial<ProjectData>) => Promise<void>;
+  deleteProject: (id: string) => Promise<void>;
+  addForm: (form: Omit<FormData, "id">) => Promise<void>;
+  updateForm: (id: string, data: Partial<FormData>) => Promise<void>;
+  deleteForm: (id: string) => Promise<void>;
+  deleteCompany: (id: string) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
   addActivity: (activity: Omit<ActivityData, "id" | "time" | "timestamp">) => void;
-  addFileToProject: (projectName: string, file: FileData) => void;
+  addFileToProject: (projectName: string, file: FileData) => Promise<void>;
   refreshFromRegistrations: () => void;
   getFormCount: () => number;
 }
 
 const SharedDataContext = createContext<SharedDataContextType | null>(null);
 
-// Generate form number
-let formCounter = mockForms.length;
+let formCounter = 0;
 function generateFormNumber(): string {
   formCounter++;
   return `DLR-2025-${String(formCounter).padStart(3, "0")}`;
-}
-
-// Convert mock forms to enriched format
-function getInitialForms(): FormData[] {
-  const storedForms = localStorage.getItem("shared_forms");
-  if (storedForms) {
-    try { return JSON.parse(storedForms); } catch { /* fall through */ }
-  }
-  return mockForms.map((f, i) => {
-    const reporter = mockPeople[i % mockPeople.length];
-    return {
-      ...f,
-      reporterName: reporter.name,
-      reporterPhone: reporter.phone,
-      reporterAvatar: reporter.avatar,
-      reportPhotos: [`https://picsum.photos/seed/form${f.id}/600/400`],
-    };
-  });
-}
-
-function getInitialProjectFiles(): ProjectFileData[] {
-  const stored = localStorage.getItem("shared_project_files");
-  if (stored) {
-    try { return JSON.parse(stored); } catch { /* fall through */ }
-  }
-  return mockProjectFiles;
-}
-
-function getRegisteredUsers(): Array<{ id: string; fullName: string; email: string; phone: string; position: string; company: string; project: string; avatarUrl?: string }> {
-  try {
-    return JSON.parse(localStorage.getItem("registered_users") || "[]");
-  } catch { return []; }
-}
-
-function getInitialPeople(): PersonData[] {
-  const stored = localStorage.getItem("shared_people");
-  if (stored) {
-    try { return JSON.parse(stored); } catch { /* fall through */ }
-  }
-  // Merge mock + registered users
-  const base = [...mockPeople] as PersonData[];
-  const users = getRegisteredUsers();
-  users.forEach(u => {
-    const existing = base.find(p => p.email === u.email);
-    if (existing) {
-      existing.name = u.fullName;
-      if (u.avatarUrl) existing.avatar = u.avatarUrl;
-    } else {
-      base.push({
-        id: u.id,
-        name: u.fullName,
-        email: u.email,
-        phone: u.phone,
-        company: u.company,
-        jobTitle: u.position,
-        role: "viewer",
-        avatar: u.avatarUrl || `https://i.pravatar.cc/150?u=${u.email}`,
-        progress: 0,
-        startDate: new Date().toISOString().split("T")[0],
-      });
-    }
-  });
-  return base;
-}
-
-function getInitialCompanies(): CompanyData[] {
-  const stored = localStorage.getItem("shared_companies");
-  if (stored) {
-    try { return JSON.parse(stored); } catch { /* fall through */ }
-  }
-  const base = [...mockCompanies] as CompanyData[];
-  const users = getRegisteredUsers();
-  users.forEach(u => {
-    if (u.company && !base.find(c => c.name.toLowerCase() === u.company.toLowerCase())) {
-      base.push({
-        id: `company-${crypto.randomUUID()}`,
-        name: u.company,
-        lineOfBusiness: "-",
-        phone: u.phone,
-        email: u.email,
-        website: "-",
-        employeeCount: 1,
-      });
-    }
-  });
-  // Update employee counts
-  const allPeople = getInitialPeople();
-  base.forEach(c => {
-    c.employeeCount = allPeople.filter(p => p.company.toLowerCase() === c.name.toLowerCase()).length;
-  });
-  return base;
-}
-
-function getInitialProjects(): ProjectData[] {
-  const stored = localStorage.getItem("shared_projects");
-  if (stored) {
-    try { return JSON.parse(stored); } catch { /* fall through */ }
-  }
-  return [...mockProjects] as ProjectData[];
-}
-
-function getInitialTasks(): TaskData[] {
-  const stored = localStorage.getItem("shared_tasks");
-  if (stored) {
-    try { return JSON.parse(stored); } catch { /* fall through */ }
-  }
-  return [...mockTasks] as TaskData[];
-}
-
-function getInitialActivities(): ActivityData[] {
-  const stored = localStorage.getItem("shared_activities");
-  if (stored) {
-    try { return JSON.parse(stored); } catch { /* fall through */ }
-  }
-  return [];
 }
 
 function formatTimeAgo(timestamp: number): string {
@@ -253,57 +141,182 @@ function formatTimeAgo(timestamp: number): string {
   return `${days} hari lalu`;
 }
 
-// BroadcastChannel for cross-tab real-time sync
 const channel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("shared_data_sync") : null;
 
 export function SharedDataProvider({ children }: { children: ReactNode }) {
-  const [people, setPeople] = useState<PersonData[]>(getInitialPeople);
-  const [companies, setCompanies] = useState<CompanyData[]>(getInitialCompanies);
-  const [projects, setProjects] = useState<ProjectData[]>(getInitialProjects);
-  const [tasks, setTasks] = useState<TaskData[]>(getInitialTasks);
-  const [forms, setForms] = useState<FormData[]>(getInitialForms);
-  const [projectFiles, setProjectFiles] = useState<ProjectFileData[]>(getInitialProjectFiles);
-  const [activities, setActivities] = useState<ActivityData[]>(getInitialActivities);
+  const [people, setPeople] = useState<PersonData[]>([]);
+  const [companies, setCompanies] = useState<CompanyData[]>([]);
+  const [projects, setProjects] = useState<ProjectData[]>([]);
+  const [tasks, setTasks] = useState<TaskData[]>([]);
+  const [forms, setForms] = useState<FormData[]>([]);
+  const [projectFiles, setProjectFiles] = useState<ProjectFileData[]>([]);
+  const [activities, setActivities] = useState<ActivityData[]>(() => {
+    try { return JSON.parse(localStorage.getItem("shared_activities") || "[]"); } catch { return []; }
+  });
+  const [loading, setLoading] = useState(true);
 
-  // Persist to localStorage
-  useEffect(() => { localStorage.setItem("shared_people", JSON.stringify(people)); }, [people]);
-  useEffect(() => { localStorage.setItem("shared_companies", JSON.stringify(companies)); }, [companies]);
-  useEffect(() => { localStorage.setItem("shared_projects", JSON.stringify(projects)); }, [projects]);
-  useEffect(() => { localStorage.setItem("shared_tasks", JSON.stringify(tasks)); }, [tasks]);
-  useEffect(() => { localStorage.setItem("shared_forms", JSON.stringify(forms)); }, [forms]);
-  useEffect(() => { localStorage.setItem("shared_project_files", JSON.stringify(projectFiles)); }, [projectFiles]);
+  // Persist activities locally (admin-only feed)
   useEffect(() => { localStorage.setItem("shared_activities", JSON.stringify(activities)); }, [activities]);
 
-  // Listen for cross-tab updates via BroadcastChannel
+  const fetchAll = useCallback(async () => {
+    const [comp, peep, proj, tsk, frm, pf] = await Promise.all([
+      supabase.from("companies").select("*").order("created_at", { ascending: false }),
+      supabase.from("people").select("*").order("created_at", { ascending: false }),
+      supabase.from("projects").select("*").order("created_at", { ascending: false }),
+      supabase.from("tasks").select("*").order("created_at", { ascending: false }),
+      supabase.from("forms").select("*").order("created_at", { ascending: false }),
+      supabase.from("project_files").select("*").order("created_at", { ascending: false }),
+    ]);
+
+    const companiesData: CompanyData[] = (comp.data || []).map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      lineOfBusiness: c.line_of_business || "",
+      phone: c.phone || "",
+      email: c.email || "",
+      website: c.website || "",
+      employeeCount: 0,
+    }));
+
+    const peopleData: PersonData[] = (peep.data || []).map((p: any) => {
+      const company = companiesData.find(c => c.id === p.company_id);
+      return {
+        id: p.id,
+        name: p.name,
+        email: p.email || "",
+        phone: p.phone || "",
+        company: company?.name || "",
+        companyId: p.company_id,
+        jobTitle: p.job_title || "",
+        role: p.role || "viewer",
+        avatar: p.avatar_url || `https://i.pravatar.cc/150?u=${p.email || p.id}`,
+        progress: p.progress || 0,
+        startDate: p.start_date || "",
+      };
+    });
+
+    // employee counts
+    companiesData.forEach(c => {
+      c.employeeCount = peopleData.filter(p => p.companyId === c.id).length;
+    });
+
+    const projectsData: ProjectData[] = (proj.data || []).map((p: any) => {
+      const company = companiesData.find(c => c.id === p.company_id);
+      return {
+        id: p.id,
+        name: p.name,
+        description: p.description || "",
+        company: company?.name || "",
+        companyId: p.company_id,
+        startDate: p.start_date || "",
+        endDate: p.end_date || "",
+        progress: p.progress || 0,
+        status: (p.status as ProjectData["status"]) || "planned",
+      };
+    });
+
+    const tasksData: TaskData[] = (tsk.data || []).map((t: any) => {
+      const project = projectsData.find(p => p.id === t.project_id);
+      const assignee = peopleData.find(p => p.id === t.assignee_id);
+      return {
+        id: t.id,
+        projectId: t.project_id,
+        projectName: project?.name || "",
+        title: t.title,
+        assignee: assignee?.name || "-",
+        assigneeId: t.assignee_id,
+        status: (t.status as TaskData["status"]) || "planned",
+        startDate: t.start_date || "",
+        endDate: t.end_date || "",
+        progress: t.progress || 0,
+      };
+    });
+
+    const formsData: FormData[] = (frm.data || []).map((f: any) => {
+      const project = projectsData.find(p => p.id === f.project_id);
+      const reporter = peopleData.find(p => p.id === f.submitted_by);
+      let photos: string[] = [];
+      try {
+        const m = (f.materials || "").match(/__PHOTOS__:(.+)$/);
+        if (m) photos = JSON.parse(m[1]);
+      } catch { /* ignore */ }
+      return {
+        id: f.id,
+        formNumber: f.form_number,
+        project: project?.name || "",
+        projectId: f.project_id,
+        templateType: (f.template_type as FormData["templateType"]) || "Laporan Harian",
+        date: f.date || "",
+        status: (f.status as FormData["status"]) || "draft",
+        progress: f.progress || 0,
+        workToday: f.work_today || "",
+        manpower: f.manpower || 0,
+        materials: (f.materials || "").replace(/__PHOTOS__:.*$/, "").trim(),
+        reporterName: reporter?.name || "",
+        reporterPhone: reporter?.phone || "",
+        reporterAvatar: reporter?.avatar || "",
+        reportPhotos: photos,
+        submittedBy: f.submitted_by,
+      };
+    });
+    formCounter = formsData.length;
+
+    // Group project_files by project
+    const pfMap = new Map<string, ProjectFileData>();
+    (pf.data || []).forEach((file: any) => {
+      const project = projectsData.find(p => p.id === file.project_id);
+      const projectName = project?.name || "Unknown";
+      const key = file.project_id;
+      if (!pfMap.has(key)) {
+        pfMap.set(key, { id: key, projectId: key, projectName, files: [] });
+      }
+      pfMap.get(key)!.files.push({
+        id: file.id,
+        name: file.name,
+        url: file.url,
+        uploadedBy: "",
+        date: file.date || "",
+      });
+    });
+
+    setCompanies(companiesData);
+    setPeople(peopleData);
+    setProjects(projectsData);
+    setTasks(tasksData);
+    setForms(formsData);
+    setProjectFiles(Array.from(pfMap.values()));
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchAll();
+
+    const ch = supabase
+      .channel("shared-data-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "companies" }, fetchAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "people" }, fetchAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, fetchAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, fetchAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "forms" }, fetchAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "project_files" }, fetchAll)
+      .subscribe();
+
+    return () => { supabase.removeChannel(ch); };
+  }, [fetchAll]);
+
+  // Cross-tab activity sync
   useEffect(() => {
     if (!channel) return;
     const handler = (e: MessageEvent) => {
       const { type, data } = e.data;
-      if (type === "new_form") {
-        setForms(prev => {
-          if (prev.find(f => f.id === data.id)) return prev;
-          return [data, ...prev];
-        });
-      }
       if (type === "new_activity") {
-        setActivities(prev => {
-          if (prev.find(a => a.id === data.id)) return prev;
-          return [data, ...prev].slice(0, 50);
-        });
-      }
-      if (type === "refresh_all") {
-        setPeople(getInitialPeople());
-        setCompanies(getInitialCompanies());
-        setForms(getInitialForms());
-        setActivities(getInitialActivities());
-        setProjectFiles(getInitialProjectFiles());
+        setActivities(prev => prev.find(a => a.id === data.id) ? prev : [data, ...prev].slice(0, 50));
       }
     };
     channel.addEventListener("message", handler);
     return () => channel.removeEventListener("message", handler);
   }, []);
 
-  // Update time-ago labels every 30s
   useEffect(() => {
     const interval = setInterval(() => {
       setActivities(prev => prev.map(a => ({ ...a, time: formatTimeAgo(a.timestamp) })));
@@ -311,84 +324,134 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, []);
 
-  const refreshFromRegistrations = useCallback(() => {
-    const users = getRegisteredUsers();
-    
-    setPeople(prev => {
-      const updated = [...prev];
-      users.forEach(u => {
-        const existing = updated.find(p => p.email === u.email);
-        if (existing) {
-          existing.name = u.fullName;
-          if (u.avatarUrl) existing.avatar = u.avatarUrl;
-          existing.phone = u.phone;
-          existing.jobTitle = u.position || existing.jobTitle;
-        } else {
-          updated.push({
-            id: u.id,
-            name: u.fullName,
-            email: u.email,
-            phone: u.phone,
-            company: u.company,
-            jobTitle: u.position,
-            role: "viewer",
-            avatar: u.avatarUrl || `https://i.pravatar.cc/150?u=${u.email}`,
-            progress: 0,
-            startDate: new Date().toISOString().split("T")[0],
-          });
-        }
-      });
-      return updated;
+  const findCompanyId = useCallback((name: string): string | null => {
+    if (!name) return null;
+    const c = companies.find(x => x.name.toLowerCase() === name.toLowerCase());
+    return c?.id || null;
+  }, [companies]);
+
+  const addPerson = useCallback(async (person: Omit<PersonData, "id">) => {
+    const company_id = person.companyId || findCompanyId(person.company);
+    await supabase.from("people").insert({
+      name: person.name, email: person.email, phone: person.phone,
+      company_id, job_title: person.jobTitle, role: person.role,
+      avatar_url: person.avatar, progress: person.progress, start_date: person.startDate || null,
     });
+    await fetchAll();
+  }, [findCompanyId, fetchAll]);
 
-    setCompanies(prev => {
-      const updated = [...prev];
-      users.forEach(u => {
-        if (u.company && !updated.find(c => c.name.toLowerCase() === u.company.toLowerCase())) {
-          updated.push({
-            id: `company-${crypto.randomUUID()}`,
-            name: u.company,
-            lineOfBusiness: "-",
-            phone: u.phone,
-            email: u.email,
-            website: "-",
-            employeeCount: 1,
-          });
-        }
-      });
-      return updated;
-    });
-  }, []);
-
-  const addPerson = useCallback((person: PersonData) => {
-    setPeople(prev => [...prev, person]);
-  }, []);
-
-  const updatePerson = useCallback((id: string, data: Partial<PersonData>) => {
-    setPeople(prev => prev.map(p => p.id === id ? { ...p, ...data } : p));
-  }, []);
+  const updatePerson = useCallback(async (id: string, data: Partial<PersonData>) => {
+    const upd: any = {};
+    if (data.name !== undefined) upd.name = data.name;
+    if (data.email !== undefined) upd.email = data.email;
+    if (data.phone !== undefined) upd.phone = data.phone;
+    if (data.jobTitle !== undefined) upd.job_title = data.jobTitle;
+    if (data.role !== undefined) upd.role = data.role;
+    if (data.avatar !== undefined) upd.avatar_url = data.avatar;
+    if (data.progress !== undefined) upd.progress = data.progress;
+    if (data.startDate !== undefined) upd.start_date = data.startDate || null;
+    if (data.company !== undefined) upd.company_id = findCompanyId(data.company);
+    await supabase.from("people").update(upd).eq("id", id);
+    await fetchAll();
+  }, [findCompanyId, fetchAll]);
 
   const deletePerson = useCallback(async (id: string) => {
-    setPeople(prev => prev.filter(p => p.id !== id));
     await supabase.from("people").delete().eq("id", id);
-  }, []);
+    await fetchAll();
+  }, [fetchAll]);
 
-  const addCompany = useCallback((company: CompanyData) => {
-    setCompanies(prev => [...prev, company]);
-  }, []);
+  const addCompany = useCallback(async (company: Omit<CompanyData, "id" | "employeeCount">) => {
+    await supabase.from("companies").insert({
+      name: company.name, line_of_business: company.lineOfBusiness,
+      phone: company.phone, email: company.email, website: company.website,
+    });
+    await fetchAll();
+  }, [fetchAll]);
 
-  const addProject = useCallback((project: ProjectData) => {
-    setProjects(prev => [...prev, project]);
-  }, []);
+  const deleteCompany = useCallback(async (id: string) => {
+    await supabase.from("companies").delete().eq("id", id);
+    await fetchAll();
+  }, [fetchAll]);
 
-  const updateProject = useCallback((id: string, data: Partial<ProjectData>) => {
-    setProjects(prev => prev.map(p => p.id === id ? { ...p, ...data } : p));
-  }, []);
+  const addProject = useCallback(async (project: Omit<ProjectData, "id">) => {
+    const company_id = project.companyId || findCompanyId(project.company);
+    await supabase.from("projects").insert({
+      name: project.name, description: project.description, company_id,
+      start_date: project.startDate || null, end_date: project.endDate || null,
+      progress: project.progress, status: project.status,
+    });
+    await fetchAll();
+  }, [findCompanyId, fetchAll]);
+
+  const updateProject = useCallback(async (id: string, data: Partial<ProjectData>) => {
+    const upd: any = {};
+    if (data.name !== undefined) upd.name = data.name;
+    if (data.description !== undefined) upd.description = data.description;
+    if (data.startDate !== undefined) upd.start_date = data.startDate || null;
+    if (data.endDate !== undefined) upd.end_date = data.endDate || null;
+    if (data.progress !== undefined) upd.progress = data.progress;
+    if (data.status !== undefined) upd.status = data.status;
+    if (data.company !== undefined) upd.company_id = findCompanyId(data.company);
+    await supabase.from("projects").update(upd).eq("id", id);
+    await fetchAll();
+  }, [findCompanyId, fetchAll]);
 
   const deleteProject = useCallback(async (id: string) => {
-    setProjects(prev => prev.filter(p => p.id !== id));
     await supabase.from("projects").delete().eq("id", id);
-  }, []);
+    await fetchAll();
+  }, [fetchAll]);
+
+  const deleteTask = useCallback(async (id: string) => {
+    await supabase.from("tasks").delete().eq("id", id);
+    await fetchAll();
+  }, [fetchAll]);
+
+  const addForm = useCallback(async (form: Omit<FormData, "id">) => {
+    const project = projects.find(p => p.name === form.project);
+    const { data: { user } } = await supabase.auth.getUser();
+    const photosTag = form.reportPhotos?.length ? `\n__PHOTOS__:${JSON.stringify(form.reportPhotos)}` : "";
+    if (!project) return;
+    await supabase.from("forms").insert({
+      form_number: form.formNumber, project_id: project.id,
+      template_type: form.templateType, date: form.date || null,
+      status: form.status, progress: form.progress, work_today: form.workToday,
+      manpower: form.manpower, materials: (form.materials || "") + photosTag,
+      submitted_by: user?.id || null,
+    });
+    await fetchAll();
+  }, [projects, fetchAll]);
+
+  const updateForm = useCallback(async (id: string, data: Partial<FormData>) => {
+    const upd: any = {};
+    if (data.workToday !== undefined) upd.work_today = data.workToday;
+    if (data.manpower !== undefined) upd.manpower = data.manpower;
+    if (data.status !== undefined) upd.status = data.status;
+    if (data.progress !== undefined) upd.progress = data.progress;
+    if (data.date !== undefined) upd.date = data.date || null;
+    if (data.materials !== undefined || data.reportPhotos !== undefined) {
+      const cur = forms.find(f => f.id === id);
+      const materials = data.materials !== undefined ? data.materials : (cur?.materials || "");
+      const photos = data.reportPhotos !== undefined ? data.reportPhotos : (cur?.reportPhotos || []);
+      const photosTag = photos.length ? `\n__PHOTOS__:${JSON.stringify(photos)}` : "";
+      upd.materials = (materials || "") + photosTag;
+    }
+    await supabase.from("forms").update(upd).eq("id", id);
+    await fetchAll();
+  }, [forms, fetchAll]);
+
+  const deleteForm = useCallback(async (id: string) => {
+    await supabase.from("forms").delete().eq("id", id);
+    await fetchAll();
+  }, [fetchAll]);
+
+  const addFileToProject = useCallback(async (projectName: string, file: FileData) => {
+    const project = projects.find(p => p.name === projectName);
+    if (!project) return;
+    await supabase.from("project_files").insert({
+      project_id: project.id, name: file.name, url: file.url, date: file.date || null,
+    });
+    await fetchAll();
+  }, [projects, fetchAll]);
 
   const addActivity = useCallback((activity: Omit<ActivityData, "id" | "time" | "timestamp">) => {
     const newActivity: ActivityData = {
@@ -401,58 +464,12 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
     channel?.postMessage({ type: "new_activity", data: newActivity });
   }, []);
 
-  const addForm = useCallback((form: FormData) => {
-    setForms(prev => [form, ...prev]);
-    channel?.postMessage({ type: "new_form", data: form });
-  }, []);
-
-  const updateForm = useCallback((id: string, data: Partial<FormData>) => {
-    setForms(prev => prev.map(f => f.id === id ? { ...f, ...data } : f));
-    channel?.postMessage({ type: "refresh_all" });
-  }, []);
-
-  const deleteForm = useCallback(async (id: string) => {
-    setForms(prev => prev.filter(f => f.id !== id));
-    channel?.postMessage({ type: "refresh_all" });
-    await supabase.from("forms").delete().eq("id", id);
-  }, []);
-
-  const deleteCompany = useCallback(async (id: string) => {
-    setCompanies(prev => prev.filter(c => c.id !== id));
-    channel?.postMessage({ type: "refresh_all" });
-    await supabase.from("companies").delete().eq("id", id);
-  }, []);
-
-  const deleteTask = useCallback(async (id: string) => {
-    setTasks(prev => prev.filter(t => t.id !== id));
-    channel?.postMessage({ type: "refresh_all" });
-    await supabase.from("tasks").delete().eq("id", id);
-  }, []);
-
-  const addFileToProject = useCallback((projectName: string, file: FileData) => {
-    setProjectFiles(prev => {
-      const updated = [...prev];
-      const existing = updated.find(pf => pf.projectName === projectName);
-      if (existing) {
-        existing.files = [...existing.files, file];
-      } else {
-        const project = projects.find(p => p.name === projectName);
-        updated.push({
-          id: crypto.randomUUID(),
-          projectId: project?.id || crypto.randomUUID(),
-          projectName,
-          files: [file],
-        });
-      }
-      return updated;
-    });
-  }, [projects]);
-
+  const refreshFromRegistrations = useCallback(() => { fetchAll(); }, [fetchAll]);
   const getFormCount = useCallback(() => formCounter, []);
 
   return (
     <SharedDataContext.Provider value={{
-      people, companies, projects, tasks, forms, projectFiles, activities,
+      people, companies, projects, tasks, forms, projectFiles, activities, loading,
       addPerson, updatePerson, deletePerson, addCompany, addProject, updateProject, deleteProject,
       addForm, updateForm, deleteForm, deleteCompany, deleteTask,
       addActivity, addFileToProject, refreshFromRegistrations, getFormCount,
