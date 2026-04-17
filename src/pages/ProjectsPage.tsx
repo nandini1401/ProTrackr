@@ -44,6 +44,7 @@ const ProjectsPage = () => {
       endDate: fd.get("endDate") as string,
       progress: 0,
       status: "planned",
+      memberCount: 0,
     });
     setDialogOpen(false);
     toast.success("Project berhasil ditambahkan");

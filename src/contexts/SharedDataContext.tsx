@@ -443,6 +443,16 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
       manpower: form.manpower, materials: (form.materials || "") + photosTag,
       submitted_by: user?.id || null,
     });
+    // Auto-save report photos as project files (Berkas) folder = project name
+    if (form.reportPhotos && form.reportPhotos.length > 0) {
+      const rows = form.reportPhotos.map((url, i) => ({
+        project_id: project.id,
+        name: `Laporan ${form.reporterName || "User"} - ${form.date || ""} (${i + 1}).png`,
+        url,
+        date: form.date || null,
+      }));
+      await supabase.from("project_files").insert(rows);
+    }
     await fetchAll();
   }, [projects, fetchAll]);
 
