@@ -102,20 +102,40 @@ const RegisterPage = () => {
           </div>
           <div className="space-y-2">
             <Label>Dari Perusahaan</Label>
-            <Input placeholder="Nama perusahaan" value={form.company} onChange={(e) => handleChange("company", e.target.value)} required />
+            {companies.length > 0 ? (
+              <Select value={form.company} onValueChange={(v) => handleChange("company", v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih perusahaan" />
+                </SelectTrigger>
+                <SelectContent>
+                  {companies.map((c) => (
+                    <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input placeholder="Nama perusahaan (belum ada di sistem)" value={form.company} onChange={(e) => handleChange("company", e.target.value)} required />
+            )}
+            <p className="text-xs text-muted-foreground">
+              {companies.length > 0 ? "Daftar dari admin (otomatis sinkron)" : "Belum ada perusahaan terdaftar — admin perlu menambahkan dulu, atau ketik manual"}
+            </p>
           </div>
           <div className="space-y-2">
             <Label>Project yang Dipegang</Label>
-            <Select value={form.project} onValueChange={(v) => handleChange("project", v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Pilih project" />
-              </SelectTrigger>
-              <SelectContent>
-                {projects.map((p) => (
-                  <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {projects.length > 0 ? (
+              <Select value={form.project} onValueChange={(v) => handleChange("project", v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input placeholder="Belum ada project — ketik manual atau kosongkan" value={form.project} onChange={(e) => handleChange("project", e.target.value)} />
+            )}
           </div>
           <div className="space-y-2">
             <Label>Password</Label>
