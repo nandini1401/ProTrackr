@@ -36,6 +36,7 @@ export interface ProjectData {
   endDate: string;
   progress: number;
   status: "planned" | "wip" | "completed";
+  memberCount: number;
 }
 
 export interface TaskData {
@@ -159,14 +160,18 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
   useEffect(() => { localStorage.setItem("shared_activities", JSON.stringify(activities)); }, [activities]);
 
   const fetchAll = useCallback(async () => {
-    const [comp, peep, proj, tsk, frm, pf] = await Promise.all([
+    const [comp, peep, proj, tsk, frm, pf, prof] = await Promise.all([
       supabase.from("companies").select("*").order("created_at", { ascending: false }),
       supabase.from("people").select("*").order("created_at", { ascending: false }),
       supabase.from("projects").select("*").order("created_at", { ascending: false }),
       supabase.from("tasks").select("*").order("created_at", { ascending: false }),
       supabase.from("forms").select("*").order("created_at", { ascending: false }),
       supabase.from("project_files").select("*").order("created_at", { ascending: false }),
+      supabase.from("profiles").select("user_id,email,avatar_url,project,company"),
     ]);
+
+    const profilesData = (prof.data || []) as Array<{ user_id: string; email: string; avatar_url: string | null; project: string | null; company: string | null }>;
+    const profileByEmail = new Map(profilesData.map(p => [(p.email || "").toLowerCase(), p]));
 
     const companiesData: CompanyData[] = (comp.data || []).map((c: any) => ({
       id: c.id,
@@ -180,6 +185,9 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
 
     const peopleData: PersonData[] = (peep.data || []).map((p: any) => {
       const company = companiesData.find(c => c.id === p.company_id);
+      // Sync avatar from user's profile if exists (so admin sees same photo as user)
+      const matchProfile = profileByEmail.get((p.email || "").toLowerCase());
+      const avatar = matchProfile?.avatar_url || p.avatar_url || `https://i.pravatar.cc/150?u=${p.email || p.id}`;
       return {
         id: p.id,
         name: p.name,
@@ -189,7 +197,7 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
         companyId: p.company_id,
         jobTitle: p.job_title || "",
         role: p.role || "viewer",
-        avatar: p.avatar_url || `https://i.pravatar.cc/150?u=${p.email || p.id}`,
+        avatar,
         progress: p.progress || 0,
         startDate: p.start_date || "",
       };
@@ -212,6 +220,7 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
         endDate: p.end_date || "",
         progress: p.progress || 0,
         status: (p.status as ProjectData["status"]) || "planned",
+        memberCount: 0,
       };
     });
 
@@ -261,6 +270,21 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
     });
     formCounter = formsData.length;
 
+    // Compute member count per project = distinct people from tasks (assignee) + forms (submitter via email->people)
+    const submitterEmailByUserId = new Map(profilesData.map(p => [p.user_id, (p.email || "").toLowerCase()]));
+    projectsData.forEach(proj => {
+      const memberIds = new Set<string>();
+      tasksData.filter(t => t.projectId === proj.id && t.assigneeId).forEach(t => memberIds.add(t.assigneeId!));
+      formsData.filter(f => f.projectId === proj.id && f.submittedBy).forEach(f => {
+        const email = submitterEmailByUserId.get(f.submittedBy!);
+        if (email) {
+          const person = peopleData.find(p => p.email.toLowerCase() === email);
+          if (person) memberIds.add(person.id);
+        }
+      });
+      proj.memberCount = memberIds.size;
+    });
+
     // Group project_files by project
     const pfMap = new Map<string, ProjectFileData>();
     (pf.data || []).forEach((file: any) => {
@@ -299,6 +323,7 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
       .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, fetchAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "forms" }, fetchAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "project_files" }, fetchAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, fetchAll)
       .subscribe();
 
     return () => { supabase.removeChannel(ch); };
@@ -418,6 +443,16 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
       manpower: form.manpower, materials: (form.materials || "") + photosTag,
       submitted_by: user?.id || null,
     });
+    // Auto-save report photos as project files (Berkas) folder = project name
+    if (form.reportPhotos && form.reportPhotos.length > 0) {
+      const rows = form.reportPhotos.map((url, i) => ({
+        project_id: project.id,
+        name: `Laporan ${form.reporterName || "User"} - ${form.date || ""} (${i + 1}).png`,
+        url,
+        date: form.date || null,
+      }));
+      await supabase.from("project_files").insert(rows);
+    }
     await fetchAll();
   }, [projects, fetchAll]);
 

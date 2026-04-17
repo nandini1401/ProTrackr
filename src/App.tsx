@@ -12,7 +12,6 @@ import ProjectDetailPage from "./pages/ProjectDetailPage";
 import FormsPage from "./pages/FormsPage";
 import CompaniesPage from "./pages/CompaniesPage";
 import PeoplePage from "./pages/PeoplePage";
-import TasksPage from "./pages/TasksPage";
 import FilesPage from "./pages/FilesPage";
 import ReportsPage from "./pages/ReportsPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -69,7 +68,6 @@ const App = () => (
                 <Route path="/people" element={<AdminRoute><PeoplePage /></AdminRoute>} />
                 <Route path="/companies" element={<AdminRoute><CompaniesPage /></AdminRoute>} />
                 <Route path="/forms" element={<AdminRoute><FormsPage /></AdminRoute>} />
-                <Route path="/tasks" element={<AdminRoute><TasksPage /></AdminRoute>} />
                 <Route path="/files" element={<AdminRoute><FilesPage /></AdminRoute>} />
                 <Route path="/reports" element={<AdminRoute><ReportsPage /></AdminRoute>} />
                 <Route path="/settings" element={<AdminRoute><SettingsPage /></AdminRoute>} />

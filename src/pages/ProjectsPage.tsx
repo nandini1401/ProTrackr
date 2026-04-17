@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, LayoutGrid, List, Trash2, Calendar, Pencil } from "lucide-react";
+import { Plus, Search, LayoutGrid, List, Trash2, Calendar, Pencil, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { ProjectData } from "@/contexts/SharedDataContext";
@@ -44,6 +44,7 @@ const ProjectsPage = () => {
       endDate: fd.get("endDate") as string,
       progress: 0,
       status: "planned",
+      memberCount: 0,
     });
     setDialogOpen(false);
     toast.success("Project berhasil ditambahkan");
@@ -157,9 +158,15 @@ const ProjectsPage = () => {
                 {project.description && (
                   <p className="text-xs text-muted-foreground line-clamp-2">{project.description}</p>
                 )}
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Calendar className="h-3 w-3" />
-                  <span>{project.startDate} — {project.endDate}</span>
+                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-3 w-3" />
+                    <span>{project.startDate} — {project.endDate}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-foreground font-medium">
+                    <Users className="h-3 w-3" />
+                    <span>{project.memberCount} orang</span>
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <div className="flex justify-between text-sm">
@@ -180,6 +187,7 @@ const ProjectsPage = () => {
                   <th className="p-3 text-sm font-medium text-muted-foreground">Nama Project</th>
                   <th className="p-3 text-sm font-medium text-muted-foreground hidden md:table-cell">Perusahaan</th>
                   <th className="p-3 text-sm font-medium text-muted-foreground hidden lg:table-cell">Tanggal</th>
+                  <th className="p-3 text-sm font-medium text-muted-foreground">Anggota</th>
                   <th className="p-3 text-sm font-medium text-muted-foreground">Progress</th>
                   <th className="p-3 text-sm font-medium text-muted-foreground">Status</th>
                   <th className="p-3 text-sm font-medium text-muted-foreground w-20">Aksi</th>
@@ -191,6 +199,12 @@ const ProjectsPage = () => {
                     <td className="p-3 text-sm font-medium text-foreground">{project.name}</td>
                     <td className="p-3 text-sm text-muted-foreground hidden md:table-cell">{project.company}</td>
                     <td className="p-3 text-sm text-muted-foreground hidden lg:table-cell">{project.startDate} — {project.endDate}</td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-1 text-sm text-foreground">
+                        <Users className="h-3 w-3 text-muted-foreground" />
+                        <span>{project.memberCount}</span>
+                      </div>
+                    </td>
                     <td className="p-3">
                       <div className="flex items-center gap-2">
                         <Progress value={project.progress} className={`h-2 w-20 ${getProgressBarColor(project.progress)}`} />
