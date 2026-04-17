@@ -16,16 +16,31 @@ const RegisterPage = () => {
   const { register } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
+  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [form, setForm] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    position: "",
-    company: "",
-    project: "",
-    password: "",
-    confirmPassword: "",
+    fullName: "", email: "", phone: "", position: "",
+    company: "", project: "", password: "", confirmPassword: "",
   });
+
+  useEffect(() => {
+    const load = async () => {
+      const [c, p] = await Promise.all([
+        supabase.from("companies").select("id, name").order("name"),
+        supabase.from("projects").select("id, name").order("name"),
+      ]);
+      setCompanies(c.data || []);
+      setProjects(p.data || []);
+    };
+    load();
+    // realtime updates
+    const ch = supabase
+      .channel("register-lookups")
+      .on("postgres_changes", { event: "*", schema: "public", table: "companies" }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, load)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
 
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
