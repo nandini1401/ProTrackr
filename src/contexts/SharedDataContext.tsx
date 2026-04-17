@@ -36,6 +36,7 @@ export interface ProjectData {
   endDate: string;
   progress: number;
   status: "planned" | "wip" | "completed";
+  memberCount: number;
 }
 
 export interface TaskData {
@@ -159,14 +160,18 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
   useEffect(() => { localStorage.setItem("shared_activities", JSON.stringify(activities)); }, [activities]);
 
   const fetchAll = useCallback(async () => {
-    const [comp, peep, proj, tsk, frm, pf] = await Promise.all([
+    const [comp, peep, proj, tsk, frm, pf, prof] = await Promise.all([
       supabase.from("companies").select("*").order("created_at", { ascending: false }),
       supabase.from("people").select("*").order("created_at", { ascending: false }),
       supabase.from("projects").select("*").order("created_at", { ascending: false }),
       supabase.from("tasks").select("*").order("created_at", { ascending: false }),
       supabase.from("forms").select("*").order("created_at", { ascending: false }),
       supabase.from("project_files").select("*").order("created_at", { ascending: false }),
+      supabase.from("profiles").select("user_id,email,avatar_url,project,company"),
     ]);
+
+    const profilesData = (prof.data || []) as Array<{ user_id: string; email: string; avatar_url: string | null; project: string | null; company: string | null }>;
+    const profileByEmail = new Map(profilesData.map(p => [(p.email || "").toLowerCase(), p]));
 
     const companiesData: CompanyData[] = (comp.data || []).map((c: any) => ({
       id: c.id,
@@ -180,6 +185,9 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
 
     const peopleData: PersonData[] = (peep.data || []).map((p: any) => {
       const company = companiesData.find(c => c.id === p.company_id);
+      // Sync avatar from user's profile if exists (so admin sees same photo as user)
+      const matchProfile = profileByEmail.get((p.email || "").toLowerCase());
+      const avatar = matchProfile?.avatar_url || p.avatar_url || `https://i.pravatar.cc/150?u=${p.email || p.id}`;
       return {
         id: p.id,
         name: p.name,
@@ -189,7 +197,7 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
         companyId: p.company_id,
         jobTitle: p.job_title || "",
         role: p.role || "viewer",
-        avatar: p.avatar_url || `https://i.pravatar.cc/150?u=${p.email || p.id}`,
+        avatar,
         progress: p.progress || 0,
         startDate: p.start_date || "",
       };
@@ -212,6 +220,7 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
         endDate: p.end_date || "",
         progress: p.progress || 0,
         status: (p.status as ProjectData["status"]) || "planned",
+        memberCount: 0,
       };
     });
 
