@@ -37,7 +37,6 @@ const ProjectsPage = () => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     addProject({
-      id: String(Date.now()),
       name: fd.get("name") as string,
       description: fd.get("description") as string,
       company: fd.get("company") as string,

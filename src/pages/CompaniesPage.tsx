@@ -29,13 +29,11 @@ const CompaniesPage = () => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     addCompany({
-      id: String(Date.now()),
       name: fd.get("name") as string,
       lineOfBusiness: fd.get("lineOfBusiness") as string,
       phone: fd.get("phone") as string,
       email: fd.get("email") as string,
       website: fd.get("website") as string,
-      employeeCount: 0,
     });
     setDialogOpen(false);
     toast.success("Perusahaan berhasil ditambahkan");
