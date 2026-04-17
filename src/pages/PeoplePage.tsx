@@ -48,7 +48,6 @@ const PeoplePage = () => {
     const photoFile = (e.currentTarget.querySelector('input[name="photo"]') as HTMLInputElement)?.files?.[0];
     const avatarUrl = photoFile ? URL.createObjectURL(photoFile) : `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`;
     addPerson({
-      id: String(Date.now()),
       name: fd.get("name") as string,
       email: fd.get("email") as string,
       phone: fd.get("phone") as string,

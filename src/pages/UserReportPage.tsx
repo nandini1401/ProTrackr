@@ -45,7 +45,6 @@ const UserReportPage = () => {
 
       // Save to shared forms (visible to admin)
       addForm({
-        id: crypto.randomUUID(),
         formNumber,
         project: currentUser.project,
         templateType: "Laporan Harian",
