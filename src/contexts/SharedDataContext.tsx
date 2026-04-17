@@ -270,6 +270,21 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
     });
     formCounter = formsData.length;
 
+    // Compute member count per project = distinct people from tasks (assignee) + forms (submitter via email->people)
+    const submitterEmailByUserId = new Map(profilesData.map(p => [p.user_id, (p.email || "").toLowerCase()]));
+    projectsData.forEach(proj => {
+      const memberIds = new Set<string>();
+      tasksData.filter(t => t.projectId === proj.id && t.assigneeId).forEach(t => memberIds.add(t.assigneeId!));
+      formsData.filter(f => f.projectId === proj.id && f.submittedBy).forEach(f => {
+        const email = submitterEmailByUserId.get(f.submittedBy!);
+        if (email) {
+          const person = peopleData.find(p => p.email.toLowerCase() === email);
+          if (person) memberIds.add(person.id);
+        }
+      });
+      proj.memberCount = memberIds.size;
+    });
+
     // Group project_files by project
     const pfMap = new Map<string, ProjectFileData>();
     (pf.data || []).forEach((file: any) => {
@@ -308,6 +323,7 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
       .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, fetchAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "forms" }, fetchAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "project_files" }, fetchAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, fetchAll)
       .subscribe();
 
     return () => { supabase.removeChannel(ch); };
