@@ -4,7 +4,6 @@ import {
   FileText,
   Building2,
   Users,
-  ListChecks,
   FolderOpen,
   Settings,
   LogOut,
@@ -31,7 +30,6 @@ const menuItems = [
   { title: "People", url: "/people", icon: Users },
   { title: "Perusahaan", url: "/companies", icon: Building2 },
   { title: "Forms", url: "/forms", icon: FileText },
-  { title: "Tasks", url: "/tasks", icon: ListChecks },
   { title: "Berkas", url: "/files", icon: FolderOpen },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
