@@ -1,12 +1,26 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useSharedData } from "@/contexts/SharedDataContext";
 import { Button } from "@/components/ui/button";
-import { FolderOpen, ChevronLeft, User, Calendar } from "lucide-react";
+import { FolderOpen, ChevronLeft, User, Calendar, Trash2 } from "lucide-react";
 import { useState, useMemo } from "react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 const FilesPage = () => {
-  const { projects, projectFiles } = useSharedData();
+  const { projects, projectFiles, deleteProjectFile } = useSharedData();
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
+
+  const handleDelete = async (projectId: string, fileId: string) => {
+    try {
+      await deleteProjectFile(projectId, fileId);
+      toast.success("Gambar berhasil dihapus");
+    } catch {
+      toast.error("Gagal menghapus gambar");
+    }
+  };
 
   const folders = useMemo(() => {
     return projects.map((p) => {
