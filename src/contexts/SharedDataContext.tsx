@@ -506,9 +506,20 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
   }, [forms, projects, fetchAll]);
 
   const deleteForm = useCallback(async (id: string) => {
+    const cur = forms.find(f => f.id === id);
+    if (cur) {
+      const project = projects.find(p => p.name === cur.project);
+      if (project) {
+        const namePrefix = `Laporan ${cur.reporterName || "User"} - ${cur.date || ""}`;
+        await supabase.from("project_files")
+          .delete()
+          .eq("project_id", project.id)
+          .like("name", `${namePrefix}%`);
+      }
+    }
     await supabase.from("forms").delete().eq("id", id);
     await fetchAll();
-  }, [fetchAll]);
+  }, [forms, projects, fetchAll]);
 
   const addFileToProject = useCallback(async (projectName: string, file: FileData) => {
     const project = projects.find(p => p.name === projectName);
