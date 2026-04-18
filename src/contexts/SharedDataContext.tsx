@@ -119,6 +119,7 @@ interface SharedDataContextType {
   deleteTask: (id: string) => Promise<void>;
   addActivity: (activity: Omit<ActivityData, "id" | "time" | "timestamp">) => void;
   addFileToProject: (projectName: string, file: FileData) => Promise<void>;
+  deleteProjectFile: (projectId: string, fileId: string) => Promise<void>;
   refreshFromRegistrations: () => void;
   getFormCount: () => number;
 }
