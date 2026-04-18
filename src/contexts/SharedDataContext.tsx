@@ -267,9 +267,9 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
         workToday: f.work_today || "",
         manpower: f.manpower || 0,
         materials: (f.materials || "").replace(/__PHOTOS__:.*$/, "").trim(),
-        reporterName: reporter?.name || "",
-        reporterPhone: reporter?.phone || "",
-        reporterAvatar: reporter?.avatar || "",
+        reporterName: reporter?.name || submitterProfile?.email?.split("@")[0] || "User",
+        reporterPhone: reporter?.phone || "-",
+        reporterAvatar: reporter?.avatar || reporterAvatarFromProfile || (submitterEmail ? `https://i.pravatar.cc/150?u=${submitterEmail}` : ""),
         reportPhotos: photos,
         submittedBy: f.submitted_by,
       };
