@@ -243,7 +243,13 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
 
     const formsData: FormData[] = (frm.data || []).map((f: any) => {
       const project = projectsData.find(p => p.id === f.project_id);
-      const reporter = peopleData.find(p => p.id === f.submitted_by);
+      // submitted_by is auth.uid() -> resolve via profiles.email -> people
+      const submitterProfile = profilesData.find(p => p.user_id === f.submitted_by);
+      const submitterEmail = (submitterProfile?.email || "").toLowerCase();
+      const reporter = submitterEmail
+        ? peopleData.find(p => p.email.toLowerCase() === submitterEmail)
+        : undefined;
+      const reporterAvatarFromProfile = submitterProfile?.avatar_url || "";
       let photos: string[] = [];
       try {
         const m = (f.materials || "").match(/__PHOTOS__:(.+)$/);
@@ -261,9 +267,9 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
         workToday: f.work_today || "",
         manpower: f.manpower || 0,
         materials: (f.materials || "").replace(/__PHOTOS__:.*$/, "").trim(),
-        reporterName: reporter?.name || "",
-        reporterPhone: reporter?.phone || "",
-        reporterAvatar: reporter?.avatar || "",
+        reporterName: reporter?.name || submitterProfile?.email?.split("@")[0] || "User",
+        reporterPhone: reporter?.phone || "-",
+        reporterAvatar: reporter?.avatar || reporterAvatarFromProfile || (submitterEmail ? `https://i.pravatar.cc/150?u=${submitterEmail}` : ""),
         reportPhotos: photos,
         submittedBy: f.submitted_by,
       };
