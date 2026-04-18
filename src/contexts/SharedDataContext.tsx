@@ -243,7 +243,13 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
 
     const formsData: FormData[] = (frm.data || []).map((f: any) => {
       const project = projectsData.find(p => p.id === f.project_id);
-      const reporter = peopleData.find(p => p.id === f.submitted_by);
+      // submitted_by is auth.uid() -> resolve via profiles.email -> people
+      const submitterProfile = profilesData.find(p => p.user_id === f.submitted_by);
+      const submitterEmail = (submitterProfile?.email || "").toLowerCase();
+      const reporter = submitterEmail
+        ? peopleData.find(p => p.email.toLowerCase() === submitterEmail)
+        : undefined;
+      const reporterAvatarFromProfile = submitterProfile?.avatar_url || "";
       let photos: string[] = [];
       try {
         const m = (f.materials || "").match(/__PHOTOS__:(.+)$/);
