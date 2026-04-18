@@ -60,16 +60,7 @@ const UserReportPage = () => {
         reportPhotos: photos,
       });
 
-      // Save photos to project files (visible in Berkas)
-      photos.forEach((photo, i) => {
-        addFileToProject(currentUser.project, {
-          id: crypto.randomUUID(),
-          name: `Laporan ${currentUser.fullName} - ${today} (${i + 1}).png`,
-          url: photo,
-          uploadedBy: currentUser.fullName,
-          date: today,
-        });
-      });
+      // Note: photos are auto-archived to Berkas inside addForm — do not duplicate here.
 
       // Also save to user's own report history
       const existing = JSON.parse(localStorage.getItem(`user_reports_${currentUser.id}`) || "[]");
