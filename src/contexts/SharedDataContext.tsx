@@ -477,8 +477,33 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
       upd.materials = (materials || "") + photosTag;
     }
     await supabase.from("forms").update(upd).eq("id", id);
+
+    // Sync photos to project_files (Berkas) when reportPhotos is edited
+    if (data.reportPhotos !== undefined) {
+      const cur = forms.find(f => f.id === id);
+      if (cur) {
+        const project = projects.find(p => p.name === cur.project);
+        if (project) {
+          // Remove old auto-generated report files for this form's date+reporter, then re-insert
+          const namePrefix = `Laporan ${cur.reporterName || "User"} - ${cur.date || ""}`;
+          await supabase.from("project_files")
+            .delete()
+            .eq("project_id", project.id)
+            .like("name", `${namePrefix}%`);
+          if (data.reportPhotos.length > 0) {
+            const rows = data.reportPhotos.map((url, i) => ({
+              project_id: project.id,
+              name: `${namePrefix} (${i + 1}).png`,
+              url,
+              date: cur.date || null,
+            }));
+            await supabase.from("project_files").insert(rows);
+          }
+        }
+      }
+    }
     await fetchAll();
-  }, [forms, fetchAll]);
+  }, [forms, projects, fetchAll]);
 
   const deleteForm = useCallback(async (id: string) => {
     await supabase.from("forms").delete().eq("id", id);
