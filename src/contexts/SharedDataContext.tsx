@@ -119,6 +119,7 @@ interface SharedDataContextType {
   deleteTask: (id: string) => Promise<void>;
   addActivity: (activity: Omit<ActivityData, "id" | "time" | "timestamp">) => void;
   addFileToProject: (projectName: string, file: FileData) => Promise<void>;
+  deleteProjectFile: (projectId: string, fileId: string) => Promise<void>;
   refreshFromRegistrations: () => void;
   getFormCount: () => number;
 }
@@ -544,12 +545,21 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
   const refreshFromRegistrations = useCallback(() => { fetchAll(); }, [fetchAll]);
   const getFormCount = useCallback(() => formCounter, []);
 
+  const deleteProjectFile = useCallback(async (projectId: string, fileId: string) => {
+    const { error } = await supabase.from("project_files").delete().eq("id", fileId);
+    if (error) { console.error(error); throw error; }
+    setProjectFiles(prev => prev.map(pf => pf.projectId === projectId
+      ? { ...pf, files: pf.files.filter(f => f.id !== fileId) }
+      : pf));
+    channel?.postMessage({ type: "data_refresh" });
+  }, []);
+
   return (
     <SharedDataContext.Provider value={{
       people, companies, projects, tasks, forms, projectFiles, activities, loading,
       addPerson, updatePerson, deletePerson, addCompany, addProject, updateProject, deleteProject,
       addForm, updateForm, deleteForm, deleteCompany, deleteTask,
-      addActivity, addFileToProject, refreshFromRegistrations, getFormCount,
+      addActivity, addFileToProject, deleteProjectFile, refreshFromRegistrations, getFormCount,
     }}>
       {children}
     </SharedDataContext.Provider>

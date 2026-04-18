@@ -1,12 +1,26 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useSharedData } from "@/contexts/SharedDataContext";
 import { Button } from "@/components/ui/button";
-import { FolderOpen, ChevronLeft, User, Calendar } from "lucide-react";
+import { FolderOpen, ChevronLeft, User, Calendar, Trash2 } from "lucide-react";
 import { useState, useMemo } from "react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 const FilesPage = () => {
-  const { projects, projectFiles } = useSharedData();
+  const { projects, projectFiles, deleteProjectFile } = useSharedData();
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
+
+  const handleDelete = async (projectId: string, fileId: string) => {
+    try {
+      await deleteProjectFile(projectId, fileId);
+      toast.success("Gambar berhasil dihapus");
+    } catch {
+      toast.error("Gagal menghapus gambar");
+    }
+  };
 
   const folders = useMemo(() => {
     return projects.map((p) => {
@@ -53,9 +67,34 @@ const FilesPage = () => {
             {currentFolder && currentFolder.files.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {currentFolder.files.map((file) => (
-                  <div key={file.id} className="bg-card rounded-lg border overflow-hidden hover:shadow-md transition-shadow">
+                  <div key={file.id} className="bg-card rounded-lg border overflow-hidden hover:shadow-md transition-shadow group relative">
                     <div className="aspect-video bg-muted relative">
                       <img src={file.url} alt={file.name} className="w-full h-full object-cover" loading="lazy" />
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Hapus gambar?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Gambar "{file.name}" akan dihapus permanen dari folder project ini.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(currentFolder!.projectId, file.id)}>
+                              Hapus
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                     <div className="p-3 space-y-1">
                       <p className="text-sm font-medium text-foreground truncate">{file.name}</p>
