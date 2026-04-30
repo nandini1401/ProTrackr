@@ -48,24 +48,39 @@ const AuthContext = createContext<AuthContextType>({
   refreshProfile: async () => {},
 });
 
-async function fetchProfile(userId: string): Promise<UserProfile | null> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("user_id", userId)
-    .single();
-  if (error || !data) return null;
-  return {
-    id: data.id,
-    user_id: data.user_id,
-    fullName: data.full_name,
-    email: data.email,
-    phone: data.phone || "",
-    position: data.position || "",
-    company: (data as any).company || "",
-    project: (data as any).project || "",
-    avatarUrl: data.avatar_url || undefined,
-  };
+async function fetchProfile(userId: string, retries = 3, delayMs = 500): Promise<UserProfile | null> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
+    
+    if (!error && data) {
+      return {
+        id: data.id,
+        user_id: data.user_id,
+        fullName: data.full_name,
+        email: data.email,
+        phone: data.phone || "",
+        position: data.position || "",
+        company: (data as any).company || "",
+        project: (data as any).project || "",
+        avatarUrl: data.avatar_url || undefined,
+      };
+    }
+    
+    // If it's the last attempt or not a "not found" error, return null
+    if (attempt === retries) {
+      console.warn(`Failed to fetch profile for user ${userId} after ${retries} attempts`, error);
+      return null;
+    }
+    
+    // Wait before retrying
+    await new Promise(resolve => setTimeout(resolve, delayMs));
+  }
+  
+  return null;
 }
 
 async function fetchRole(userId: string): Promise<"admin" | "user"> {
@@ -99,8 +114,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const user = session?.user ?? null;
         setAuthUser(user);
         if (user) {
-          // Use setTimeout to avoid Supabase deadlock
-          setTimeout(() => loadUserData(user), 0);
+          // Increase delay to give trigger more time to create profile
+          // Use 1000ms instead of 0 to allow database triggers to complete
+          setTimeout(() => loadUserData(user), 1000);
         } else {
           setCurrentUser(null);
           setRole(null);
