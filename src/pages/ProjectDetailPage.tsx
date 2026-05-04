@@ -440,10 +440,6 @@ const ProjectDetailPage = () => {
               <span>{project.startDate} — {project.endDate}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <ListChecks className="h-4 w-4" />
-              <span>{projectTasks.length} Tugas</span>
-            </div>
-            <div className="flex items-center gap-1.5">
               <FileText className="h-4 w-4" />
               <span>{projectFormsRaw.length} Laporan</span>
             </div>
