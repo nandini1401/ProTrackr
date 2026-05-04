@@ -86,12 +86,13 @@ const ProjectDetailPage = () => {
 
       // ===== TABLE =====
       const cols = [
-        { label: "Tanggal", w: 22 },
-        { label: "No. Form", w: 28 },
-        { label: "Pelapor", w: 30 },
-        { label: "Manpower", w: 18 },
-        { label: "Pekerjaan", w: 50 },
-        { label: "Material", w: 32 },
+        { label: "No. Form", w: 26 },
+        { label: "Pelapor", w: 28 },
+        { label: "No. HP", w: 24 },
+        { label: "Project", w: 30 },
+        { label: "Tanggal", w: 20 },
+        { label: "Pekerjaan Hari Ini", w: 36 },
+        { label: "Status", w: 16 },
       ];
       const colX: number[] = [];
       let acc = margin;
@@ -121,12 +122,13 @@ const ProjectDetailPage = () => {
 
         filteredForms.forEach((form, idx) => {
           const rowData = [
-            form.date || "-",
             form.formNumber,
             form.reporterName,
-            String(form.manpower || 0),
+            form.reporterPhone || "-",
+            form.project || project.name,
+            form.date || "-",
             form.workToday || "-",
-            form.materials || "-",
+            form.status || "-",
           ];
           // compute row height based on wrapped text
           const wrapped = rowData.map((txt, i) => doc.splitTextToSize(txt, cols[i].w - 4));
