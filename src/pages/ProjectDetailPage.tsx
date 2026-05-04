@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowLeft, CalendarIcon, Download, FileText, ListChecks, FolderOpen } from "lucide-react";
+import { ArrowLeft, CalendarIcon, Download, FileText, FolderOpen } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -35,14 +35,14 @@ const templateColors: Record<string, string> = {
 const ProjectDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { projects, tasks, forms, projectFiles, people } = useSharedData();
+  const { projects, forms, projectFiles } = useSharedData();
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [generatingPdf, setGeneratingPdf] = useState(false);
 
   const project = projects.find((p) => p.id === id);
 
-  const projectTasks = tasks.filter((t) => t.projectId === id);
+
   const projectFormsRaw = forms.filter((f) => f.project === project?.name);
   const projectFileData = projectFiles.find((pf) => pf.projectId === id || pf.projectName === project?.name);
 
