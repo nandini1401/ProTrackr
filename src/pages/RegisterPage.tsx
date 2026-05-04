@@ -17,7 +17,7 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
-  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
+  const [projects, setProjects] = useState<{ id: string; name: string; company_id: string | null }[]>([]);
   const [form, setForm] = useState({
     fullName: "", email: "", phone: "", position: "",
     company: "", project: "", password: "", confirmPassword: "",
@@ -27,7 +27,7 @@ const RegisterPage = () => {
     const load = async () => {
       const [c, p] = await Promise.all([
         supabase.from("companies").select("id, name").order("name"),
-        supabase.from("projects").select("id, name").order("name"),
+        supabase.from("projects").select("id, name, company_id").order("name"),
       ]);
       setCompanies(c.data || []);
       setProjects(p.data || []);
@@ -42,8 +42,17 @@ const RegisterPage = () => {
     return () => { supabase.removeChannel(ch); };
   }, []);
 
+  const selectedCompany = companies.find((c) => c.name === form.company);
+  const filteredProjects = selectedCompany
+    ? projects.filter((p) => p.company_id === selectedCompany.id)
+    : [];
+
   const handleChange = (field: string, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === "company") next.project = "";
+      return next;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -122,19 +131,21 @@ const RegisterPage = () => {
           </div>
           <div className="space-y-2">
             <Label>Project yang Dipegang</Label>
-            {projects.length > 0 ? (
+            {!form.company ? (
+              <Input disabled placeholder="Pilih perusahaan terlebih dahulu" />
+            ) : filteredProjects.length > 0 ? (
               <Select value={form.project} onValueChange={(v) => handleChange("project", v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih project" />
                 </SelectTrigger>
                 <SelectContent>
-                  {projects.map((p) => (
+                  {filteredProjects.map((p) => (
                     <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             ) : (
-              <Input placeholder="Belum ada project — ketik manual atau kosongkan" value={form.project} onChange={(e) => handleChange("project", e.target.value)} />
+              <Input placeholder="Belum ada project untuk perusahaan ini — ketik manual atau kosongkan" value={form.project} onChange={(e) => handleChange("project", e.target.value)} />
             )}
           </div>
           <div className="space-y-2">

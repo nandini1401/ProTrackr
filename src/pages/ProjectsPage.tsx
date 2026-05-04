@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, LayoutGrid, List, Trash2, Calendar, Pencil, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -19,7 +20,9 @@ function getProgressBarColor(progress: number) {
 }
 
 const ProjectsPage = () => {
-  const { projects, addProject, updateProject, deleteProject } = useSharedData();
+  const { projects, companies, addProject, updateProject, deleteProject } = useSharedData();
+  const [newCompany, setNewCompany] = useState("");
+  const [editCompany, setEditCompany] = useState("");
   const [view, setView] = useState<"list" | "grid">("grid");
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
@@ -39,7 +42,7 @@ const ProjectsPage = () => {
     addProject({
       name: fd.get("name") as string,
       description: fd.get("description") as string,
-      company: fd.get("company") as string,
+      company: newCompany,
       startDate: fd.get("startDate") as string,
       endDate: fd.get("endDate") as string,
       progress: 0,
@@ -57,7 +60,7 @@ const ProjectsPage = () => {
     updateProject(editingProject.id, {
       name: fd.get("name") as string,
       description: fd.get("description") as string,
-      company: fd.get("company") as string,
+      company: editCompany,
       startDate: fd.get("startDate") as string,
       endDate: fd.get("endDate") as string,
       progress: Number(fd.get("progress")),
@@ -88,7 +91,7 @@ const ProjectsPage = () => {
             <Button variant={view === "list" ? "default" : "outline"} size="icon" onClick={() => setView("list")}>
               <List className="h-4 w-4" />
             </Button>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (o) setNewCompany(""); }}>
               <DialogTrigger asChild>
                 <Button size="sm"><Plus className="mr-2 h-4 w-4" />Tambah Project</Button>
               </DialogTrigger>
@@ -97,7 +100,15 @@ const ProjectsPage = () => {
                 <form onSubmit={handleAdd} className="space-y-4">
                   <div><Label>Nama Project</Label><Input name="name" required /></div>
                   <div><Label>Deskripsi</Label><Input name="description" required /></div>
-                  <div><Label>Perusahaan</Label><Input name="company" required /></div>
+                  <div>
+                    <Label>Perusahaan</Label>
+                    <Select value={newCompany} onValueChange={setNewCompany} required>
+                      <SelectTrigger><SelectValue placeholder={companies.length ? "Pilih perusahaan" : "Belum ada perusahaan"} /></SelectTrigger>
+                      <SelectContent>
+                        {companies.map((c) => (<SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div><Label>Tanggal Mulai</Label><Input name="startDate" type="date" required /></div>
                     <div><Label>Tanggal Selesai</Label><Input name="endDate" type="date" required /></div>
@@ -109,14 +120,22 @@ const ProjectsPage = () => {
           </div>
         </div>
 
-        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <Dialog open={editDialogOpen} onOpenChange={(o) => { setEditDialogOpen(o); if (o && editingProject) setEditCompany(editingProject.company); }}>
           <DialogContent>
             <DialogHeader><DialogTitle>Edit Project</DialogTitle></DialogHeader>
             {editingProject && (
               <form onSubmit={handleEdit} className="space-y-4">
                 <div><Label>Nama Project</Label><Input name="name" defaultValue={editingProject.name} required /></div>
                 <div><Label>Deskripsi</Label><Input name="description" defaultValue={editingProject.description} required /></div>
-                <div><Label>Perusahaan</Label><Input name="company" defaultValue={editingProject.company} required /></div>
+                <div>
+                  <Label>Perusahaan</Label>
+                  <Select value={editCompany} onValueChange={setEditCompany} required>
+                    <SelectTrigger><SelectValue placeholder="Pilih perusahaan" /></SelectTrigger>
+                    <SelectContent>
+                      {companies.map((c) => (<SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div><Label>Tanggal Mulai</Label><Input name="startDate" type="date" defaultValue={editingProject.startDate} required /></div>
                   <div><Label>Tanggal Selesai</Label><Input name="endDate" type="date" defaultValue={editingProject.endDate} required /></div>
