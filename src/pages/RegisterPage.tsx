@@ -17,7 +17,7 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
-  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
+  const [projects, setProjects] = useState<{ id: string; name: string; company_id: string | null }[]>([]);
   const [form, setForm] = useState({
     fullName: "", email: "", phone: "", position: "",
     company: "", project: "", password: "", confirmPassword: "",
@@ -27,7 +27,7 @@ const RegisterPage = () => {
     const load = async () => {
       const [c, p] = await Promise.all([
         supabase.from("companies").select("id, name").order("name"),
-        supabase.from("projects").select("id, name").order("name"),
+        supabase.from("projects").select("id, name, company_id").order("name"),
       ]);
       setCompanies(c.data || []);
       setProjects(p.data || []);
@@ -42,8 +42,17 @@ const RegisterPage = () => {
     return () => { supabase.removeChannel(ch); };
   }, []);
 
+  const selectedCompany = companies.find((c) => c.name === form.company);
+  const filteredProjects = selectedCompany
+    ? projects.filter((p) => p.company_id === selectedCompany.id)
+    : [];
+
   const handleChange = (field: string, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === "company") next.project = "";
+      return next;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
