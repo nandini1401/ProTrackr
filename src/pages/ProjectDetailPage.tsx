@@ -546,36 +546,6 @@ const ProjectDetailPage = () => {
           )}
         </div>
 
-        {/* Tasks Section */}
-        <div className="bg-card rounded-lg border p-6 space-y-4">
-          <div className="flex items-center gap-2">
-            <ListChecks className="h-5 w-5 text-primary" />
-            <h3 className="text-lg font-semibold text-foreground">Tugas</h3>
-            <Badge variant="secondary" className="ml-1">{projectTasks.length}</Badge>
-          </div>
-          {projectTasks.length > 0 ? (
-            <div className="space-y-2">
-              {projectTasks.map((task) => (
-                <div key={task.id} className="border rounded-lg p-3 flex items-center justify-between gap-4 hover:bg-muted/30 transition-colors">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground">{task.title}</p>
-                    <p className="text-xs text-muted-foreground">{task.assignee} · {task.startDate} — {task.endDate}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 w-28">
-                      <Progress value={task.progress} className={`h-2 flex-1 ${getProgressBarColor(task.progress)}`} />
-                      <span className="text-xs font-medium">{task.progress}%</span>
-                    </div>
-                    <StatusBadge status={task.status} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-6 text-muted-foreground text-sm">Tidak ada tugas.</div>
-          )}
-        </div>
-
         {/* Files Section */}
         {projectFileData && projectFileData.files.length > 0 && (
           <div className="bg-card rounded-lg border p-6 space-y-4">
