@@ -188,7 +188,7 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
       const company = companiesData.find(c => c.id === p.company_id);
       // Sync avatar from user's profile if exists (so admin sees same photo as user)
       const matchProfile = profileByEmail.get((p.email || "").toLowerCase());
-      const avatar = matchProfile?.avatar_url || p.avatar_url || `https://i.pravatar.cc/150?u=${p.email || p.id}`;
+      const avatar = matchProfile?.avatar_url || p.avatar_url || "";
       return {
         id: p.id,
         name: p.name,
@@ -270,7 +270,7 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
         materials: (f.materials || "").replace(/__PHOTOS__:.*$/, "").trim(),
         reporterName: reporter?.name || submitterProfile?.email?.split("@")[0] || "User",
         reporterPhone: reporter?.phone || "-",
-        reporterAvatar: reporter?.avatar || reporterAvatarFromProfile || (submitterEmail ? `https://i.pravatar.cc/150?u=${submitterEmail}` : ""),
+        reporterAvatar: reporter?.avatar || reporterAvatarFromProfile || "",
         reportPhotos: photos,
         submittedBy: f.submitted_by,
       };
