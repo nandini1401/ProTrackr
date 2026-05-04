@@ -55,342 +55,114 @@ const ProjectDetailPage = () => {
     });
   }, [projectFormsRaw, dateFrom, dateTo]);
 
-  const loadImageAsBase64 = (url: string): Promise<string | null> => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          resolve(canvas.toDataURL("image/jpeg", 0.7));
-        } else {
-          resolve(null);
-        }
-      };
-      img.onerror = () => resolve(null);
-      img.src = url;
-    });
-  };
-
   const handleDownloadPdf = async () => {
     if (!project) return;
     setGeneratingPdf(true);
     try {
       const { default: jsPDF } = await import("jspdf");
-
-      // Preload all form images
-      const imagePromises = filteredForms.map((f) => loadImageAsBase64(f.reportPhotos?.[0] || ""));
-      const formImages = await Promise.all(imagePromises);
-
-      // Preload file images
-      const fileImages: (string | null)[] = [];
-      if (projectFileData) {
-        const fileImgPromises = projectFileData.files.map((f) => loadImageAsBase64(f.url));
-        fileImages.push(...(await Promise.all(fileImgPromises)));
-      }
-
       const doc = new jsPDF("p", "mm", "a4");
       const pageWidth = 210;
+      const pageHeight = 297;
       const margin = 15;
       const contentWidth = pageWidth - margin * 2;
       let y = margin;
 
       const checkPage = (needed: number) => {
-        if (y + needed > 280) {
+        if (y + needed > pageHeight - 20) {
           doc.addPage();
           y = margin;
         }
       };
 
       // ===== HEADER =====
-      doc.setFillColor(30, 41, 59); // slate-800
-      doc.rect(0, 0, pageWidth, 40, "F");
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(20);
+      doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
-      doc.text(project.name, margin, 18);
+      doc.text("Laporan Harian Project", margin, y + 4);
+      y += 10;
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.text(`${project.company}`, margin, 26);
-      doc.text(`Periode: ${project.startDate} s/d ${project.endDate}`, margin, 33);
+      doc.text(`Project   : ${project.name}`, margin, y); y += 5;
+      doc.text(`Perusahaan: ${project.company}`, margin, y); y += 5;
+      const periodeText = (dateFrom || dateTo)
+        ? `${dateFrom ? format(dateFrom, "dd MMM yyyy", { locale: localeId }) : "..."} s/d ${dateTo ? format(dateTo, "dd MMM yyyy", { locale: localeId }) : "..."}`
+        : `${project.startDate} s/d ${project.endDate}`;
+      doc.text(`Periode   : ${periodeText}`, margin, y); y += 5;
+      doc.text(`Total     : ${filteredForms.length} laporan`, margin, y); y += 8;
 
-      // Status badge
-      const statusLabel =
-        project.status === "completed" ? "Completed" :
-        project.status === "wip" ? "In Progress" : "Planned";
-      const statusColor =
-        project.status === "completed" ? [22, 163, 74] :
-        project.status === "wip" ? [234, 179, 8] : [59, 130, 246];
-      doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
-      doc.roundedRect(pageWidth - margin - 30, 12, 30, 8, 2, 2, "F");
-      doc.setFontSize(8);
-      doc.setTextColor(255, 255, 255);
-      doc.text(statusLabel, pageWidth - margin - 15, 17.5, { align: "center" });
+      // ===== TABLE =====
+      const cols = [
+        { label: "Tanggal", w: 22 },
+        { label: "No. Form", w: 28 },
+        { label: "Pelapor", w: 30 },
+        { label: "Manpower", w: 18 },
+        { label: "Pekerjaan", w: 50 },
+        { label: "Material", w: 32 },
+      ];
+      const colX: number[] = [];
+      let acc = margin;
+      cols.forEach((c) => { colX.push(acc); acc += c.w; });
 
-      y = 50;
-      doc.setTextColor(30, 41, 59);
-
-      // ===== PROJECT INFO =====
-      doc.setFillColor(241, 245, 249); // slate-100
-      doc.roundedRect(margin, y, contentWidth, 30, 3, 3, "F");
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
-      doc.text("Informasi Project", margin + 5, y + 8);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.text(`Deskripsi: ${project.description}`, margin + 5, y + 15);
-
-      // Progress bar
-      const progressBarY = y + 20;
-      const progressBarWidth = contentWidth - 50;
-      doc.setFillColor(226, 232, 240); // slate-200
-      doc.roundedRect(margin + 5, progressBarY, progressBarWidth, 5, 2, 2, "F");
-      const progressColor = getProgressColorHex(project.progress);
-      const r = parseInt(progressColor.slice(1, 3), 16);
-      const g = parseInt(progressColor.slice(3, 5), 16);
-      const b = parseInt(progressColor.slice(5, 7), 16);
-      doc.setFillColor(r, g, b);
-      doc.roundedRect(margin + 5, progressBarY, (progressBarWidth * project.progress) / 100, 5, 2, 2, "F");
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(r, g, b);
-      doc.text(`${project.progress}%`, margin + 5 + progressBarWidth + 3, progressBarY + 4);
-      doc.setTextColor(30, 41, 59);
-
-      y += 38;
-
-      // ===== LAPORAN / FORMS =====
-      checkPage(20);
-      doc.setFontSize(13);
-      doc.setFont("helvetica", "bold");
-      doc.text("Laporan Masuk", margin, y);
-      y += 3;
-
-      if (dateFrom || dateTo) {
-        doc.setFontSize(8);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(100, 116, 139);
-        const filterText = `Filter: ${dateFrom ? format(dateFrom, "dd MMM yyyy", { locale: localeId }) : "..."} - ${dateTo ? format(dateTo, "dd MMM yyyy", { locale: localeId }) : "..."}`;
-        doc.text(filterText, margin, y + 4);
-        doc.setTextColor(30, 41, 59);
-        y += 7;
-      }
-
-      y += 4;
-
-      if (filteredForms.length === 0) {
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "italic");
-        doc.setTextColor(148, 163, 184);
-        doc.text("Tidak ada laporan pada periode ini.", margin, y);
-        doc.setTextColor(30, 41, 59);
-        y += 10;
-      } else {
-        // Table header
-        checkPage(12);
+      const drawHeader = () => {
         doc.setFillColor(30, 41, 59);
         doc.rect(margin, y, contentWidth, 8, "F");
         doc.setTextColor(255, 255, 255);
-        doc.setFontSize(8);
+        doc.setFontSize(8.5);
         doc.setFont("helvetica", "bold");
-        const cols = [margin + 2, margin + 30, margin + 60, margin + 100, margin + 140];
-        doc.text("No. Form", cols[0], y + 5.5);
-        doc.text("Tanggal", cols[1], y + 5.5);
-        doc.text("Template", cols[2], y + 5.5);
-        doc.text("Pekerjaan", cols[3], y + 5.5);
-        doc.text("Status", cols[4], y + 5.5);
+        cols.forEach((c, i) => doc.text(c.label, colX[i] + 2, y + 5.5));
         y += 8;
         doc.setTextColor(30, 41, 59);
+      };
+
+      if (filteredForms.length === 0) {
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "italic");
+        doc.setTextColor(120, 120, 120);
+        doc.text("Tidak ada laporan pada periode ini.", margin, y);
+        doc.setTextColor(0, 0, 0);
+      } else {
+        drawHeader();
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
 
         filteredForms.forEach((form, idx) => {
-          checkPage(10);
+          const rowData = [
+            form.date || "-",
+            form.formNumber,
+            form.reporterName,
+            String(form.manpower || 0),
+            form.workToday || "-",
+            form.materials || "-",
+          ];
+          // compute row height based on wrapped text
+          const wrapped = rowData.map((txt, i) => doc.splitTextToSize(txt, cols[i].w - 4));
+          const lineCount = Math.max(...wrapped.map((w) => w.length));
+          const rowH = Math.max(8, lineCount * 4 + 3);
+
+          checkPage(rowH);
+          if (y === margin) drawHeader();
+
           if (idx % 2 === 0) {
             doc.setFillColor(248, 250, 252);
-            doc.rect(margin, y, contentWidth, 8, "F");
+            doc.rect(margin, y, contentWidth, rowH, "F");
           }
-          doc.setFontSize(8);
-          doc.setFont("helvetica", "normal");
-          doc.text(form.formNumber, cols[0], y + 5.5);
-          doc.text(form.date, cols[1], y + 5.5);
-          doc.text(form.templateType, cols[2], y + 5.5);
-          doc.text(form.workToday.substring(0, 28), cols[3], y + 5.5);
-
-          // Status color badge
-          const sColor =
-            form.status === "submitted" ? [59, 130, 246] :
-            form.status === "closed" ? [22, 163, 74] : [148, 163, 184];
-          doc.setFillColor(sColor[0], sColor[1], sColor[2]);
-          doc.roundedRect(cols[4], y + 1.5, 22, 5, 1.5, 1.5, "F");
-          doc.setTextColor(255, 255, 255);
-          doc.setFontSize(6.5);
-          doc.text(form.status.charAt(0).toUpperCase() + form.status.slice(1), cols[4] + 11, y + 5, { align: "center" });
-          doc.setTextColor(30, 41, 59);
-
-          y += 8;
+          wrapped.forEach((lines, i) => {
+            doc.text(lines, colX[i] + 2, y + 5);
+          });
+          // borders
+          doc.setDrawColor(220, 220, 220);
+          doc.line(margin, y + rowH, margin + contentWidth, y + rowH);
+          y += rowH;
         });
-
-        // Detail per form with images
-        y += 5;
-        for (let fi = 0; fi < filteredForms.length; fi++) {
-          const form = filteredForms[fi];
-          const formIdx = fi;
-          const imgData = formImages[formIdx] || null;
-          const cardHeight = imgData ? 80 : 42;
-          
-          checkPage(cardHeight + 5);
-          doc.setFillColor(241, 245, 249);
-          doc.roundedRect(margin, y, contentWidth, cardHeight, 3, 3, "F");
-
-          doc.setFontSize(10);
-          doc.setFont("helvetica", "bold");
-          doc.text(`${form.formNumber} — ${form.templateType}`, margin + 5, y + 8);
-
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(8);
-          doc.text(`Pelapor: ${form.reporterName}`, margin + 5, y + 15);
-          doc.text(`Tanggal: ${form.date}`, margin + 5, y + 21);
-          doc.text(`Manpower: ${form.manpower} orang`, margin + 5, y + 27);
-          doc.text(`Material: ${form.materials}`, margin + 5, y + 33);
-          doc.text(`Pekerjaan: ${form.workToday}`, margin + 5, y + 39);
-
-          // Progress mini bar
-          const miniBarX = margin + contentWidth - 55;
-          doc.setFontSize(7);
-          doc.text(`Progress: ${form.progress}%`, miniBarX, y + 8);
-          doc.setFillColor(226, 232, 240);
-          doc.roundedRect(miniBarX, y + 10, 45, 4, 1.5, 1.5, "F");
-          const pc = getProgressColorHex(form.progress);
-          doc.setFillColor(parseInt(pc.slice(1, 3), 16), parseInt(pc.slice(3, 5), 16), parseInt(pc.slice(5, 7), 16));
-          doc.roundedRect(miniBarX, y + 10, (45 * form.progress) / 100, 4, 1.5, 1.5, "F");
-
-          // Add report photo
-          if (imgData) {
-            doc.setFontSize(7);
-            doc.setTextColor(100, 116, 139);
-            doc.text("Foto Laporan:", margin + 5, y + 47);
-            doc.setTextColor(30, 41, 59);
-            try {
-              doc.addImage(imgData, "JPEG", margin + 5, y + 49, 60, 28);
-            } catch (e) {
-              // skip if image fails
-            }
-            // Add border around image
-            doc.setDrawColor(200, 200, 200);
-            doc.rect(margin + 5, y + 49, 60, 28);
-            doc.setDrawColor(0, 0, 0);
-          }
-
-          y += cardHeight + 5;
-        }
-      }
-
-      // ===== TASKS =====
-      checkPage(20);
-      y += 5;
-      doc.setFontSize(13);
-      doc.setFont("helvetica", "bold");
-      doc.text("Daftar Tugas", margin, y);
-      y += 7;
-
-      if (projectTasks.length === 0) {
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "italic");
-        doc.setTextColor(148, 163, 184);
-        doc.text("Tidak ada tugas.", margin, y);
-        doc.setTextColor(30, 41, 59);
-        y += 10;
-      } else {
-        projectTasks.forEach((task) => {
-          checkPage(14);
-          doc.setFillColor(248, 250, 252);
-          doc.roundedRect(margin, y, contentWidth, 12, 2, 2, "F");
-          doc.setFontSize(9);
-          doc.setFont("helvetica", "bold");
-          doc.text(task.title, margin + 4, y + 5);
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(7.5);
-          doc.text(`${task.assignee} · ${task.startDate} — ${task.endDate}`, margin + 4, y + 10);
-
-          // Task progress
-          const taskBarX = margin + contentWidth - 50;
-          doc.setFillColor(226, 232, 240);
-          doc.roundedRect(taskBarX, y + 2.5, 35, 3.5, 1.5, 1.5, "F");
-          const tc = getProgressColorHex(task.progress);
-          doc.setFillColor(parseInt(tc.slice(1, 3), 16), parseInt(tc.slice(3, 5), 16), parseInt(tc.slice(5, 7), 16));
-          doc.roundedRect(taskBarX, y + 2.5, (35 * task.progress) / 100, 3.5, 1.5, 1.5, "F");
-          doc.setFontSize(7);
-          doc.text(`${task.progress}%`, taskBarX + 37, y + 5.5);
-
-          // Status
-          const tsColor =
-            task.status === "completed" ? [22, 163, 74] :
-            task.status === "wip" ? [234, 179, 8] : [59, 130, 246];
-          doc.setFillColor(tsColor[0], tsColor[1], tsColor[2]);
-          doc.roundedRect(taskBarX, y + 7.5, 18, 4, 1.5, 1.5, "F");
-          doc.setTextColor(255, 255, 255);
-          doc.setFontSize(6);
-          const tsLabel = task.status === "completed" ? "Done" : task.status === "wip" ? "WIP" : "Planned";
-          doc.text(tsLabel, taskBarX + 9, y + 10.5, { align: "center" });
-          doc.setTextColor(30, 41, 59);
-
-          y += 15;
-        });
-      }
-
-      // ===== FILES WITH IMAGES =====
-      if (projectFileData && projectFileData.files.length > 0) {
-        checkPage(20);
-        y += 5;
-        doc.setFontSize(13);
-        doc.setFont("helvetica", "bold");
-        doc.text("Berkas / Dokumentasi", margin, y);
-        y += 7;
-
-        for (let fi = 0; fi < projectFileData.files.length; fi++) {
-          const file = projectFileData.files[fi];
-          const imgData = fileImages[fi];
-          checkPage(45);
-          
-          doc.setFillColor(248, 250, 252);
-          doc.roundedRect(margin, y, contentWidth, 40, 2, 2, "F");
-          
-          if (imgData) {
-            try {
-              doc.addImage(imgData, "JPEG", margin + 3, y + 2, 50, 36);
-            } catch (e) {}
-            doc.setDrawColor(200, 200, 200);
-            doc.rect(margin + 3, y + 2, 50, 36);
-            doc.setDrawColor(0, 0, 0);
-          }
-
-          doc.setFontSize(9);
-          doc.setFont("helvetica", "bold");
-          doc.text(file.name, margin + 58, y + 10);
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(8);
-          doc.text(`Diupload oleh: ${file.uploadedBy}`, margin + 58, y + 18);
-          doc.text(`Tanggal: ${file.date}`, margin + 58, y + 25);
-
-          y += 44;
-        }
       }
 
       // ===== FOOTER =====
       const totalPages = doc.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
-        doc.setFillColor(241, 245, 249);
-        doc.rect(0, 287, pageWidth, 10, "F");
         doc.setFontSize(7);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(148, 163, 184);
-        doc.text(`ProjectLog — ${project.name}`, margin, 293);
-        doc.text(`Halaman ${i} dari ${totalPages}`, pageWidth - margin, 293, { align: "right" });
-        doc.text(`Dicetak: ${format(new Date(), "dd MMM yyyy HH:mm", { locale: localeId })}`, pageWidth / 2, 293, { align: "center" });
+        doc.setTextColor(150, 150, 150);
+        doc.text(`Halaman ${i}/${totalPages}`, pageWidth - margin, pageHeight - 8, { align: "right" });
+        doc.text(`Dicetak: ${format(new Date(), "dd MMM yyyy HH:mm", { locale: localeId })}`, margin, pageHeight - 8);
       }
 
       doc.save(`Laporan_${project.name.replace(/\s+/g, "_")}.pdf`);
