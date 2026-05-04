@@ -35,8 +35,8 @@ const UserProfilePage = () => {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Ukuran foto maksimal 2MB");
+    if (file.size > 5 * 1500 * 1500) {
+      toast.error("Ukuran foto maksimal 5MB.");
       return;
     }
     const reader = new FileReader();
@@ -159,7 +159,7 @@ const UserProfilePage = () => {
             <AlertDialogTrigger asChild>
               <Button variant="destructive" size="sm" disabled={deleting}>
                 <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                {deleting ? "Menghapus..." : "Hapus Akun Permanen"}
+                {deleting ? "Menghapus..." : "Hapus Akun "}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>

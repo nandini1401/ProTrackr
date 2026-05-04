@@ -91,8 +91,8 @@ const ProjectDetailPage = () => {
         { label: "No. HP", w: 24 },
         { label: "Project", w: 30 },
         { label: "Tanggal", w: 20 },
-        { label: "Pekerjaan Hari Ini", w: 36 },
-        { label: "Status", w: 16 },
+        { label: "Pekerjaan Hari Ini", w: 30 },
+        { label: "Status", w: 25 },
       ];
       const colX: number[] = [];
       let acc = margin;

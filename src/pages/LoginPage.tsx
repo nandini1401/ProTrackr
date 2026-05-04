@@ -23,8 +23,8 @@ const LoginPage = () => {
     const result = await login(email, password);
     setLoading(false);
     if (result.success) {
-      // Role will be determined by AuthContext, redirect happens via route guards
-      // We need to wait briefly for auth state to update
+      
+
       toast.success("Login berhasil!");
     } else {
       setError(result.error || "Email atau password salah");
@@ -36,7 +36,7 @@ const LoginPage = () => {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
           <img src="/logo-protrackr.png" alt="Logo" className="mx-auto h-20 w-auto" />
-          <p className="text-sm text-muted-foreground">Sistem Informasi Laporan Harian Project</p>
+          <p className="text-sm text-muted-foreground">Sistem Manajemen Project & Laporan Harian </p>
         </div>
 
         <form onSubmit={handleLogin} className="bg-card rounded-lg border p-6 space-y-4">
@@ -71,7 +71,7 @@ const LoginPage = () => {
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Signing in..." : "Sign In"}
+            {loading ? "Login....." : "Login"}
           </Button>
         </form>
 

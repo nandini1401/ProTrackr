@@ -48,6 +48,23 @@ const AuthContext = createContext<AuthContextType>({
   refreshProfile: async () => {},
 });
 
+
+// 🔥 CENTRAL ERROR HANDLER
+const mapAuthError = (msg: string) => {
+  if (msg.includes("Invalid login credentials")) {
+    return "Email atau password salah";
+  }
+  if (msg.includes("Email not confirmed")) {
+    return "Email belum diverifikasi";
+  }
+  if (msg.includes("User already registered")) {
+    return "Email sudah terdaftar";
+  }
+  return "Terjadi kesalahan, coba lagi";
+};
+
+
+// 🔍 FETCH PROFILE
 async function fetchProfile(userId: string, retries = 3, delayMs = 500): Promise<UserProfile | null> {
   for (let attempt = 1; attempt <= retries; attempt++) {
     const { data, error } = await supabase
@@ -55,7 +72,7 @@ async function fetchProfile(userId: string, retries = 3, delayMs = 500): Promise
       .select("*")
       .eq("user_id", userId)
       .single();
-    
+
     if (!error && data) {
       return {
         id: data.id,
@@ -69,34 +86,38 @@ async function fetchProfile(userId: string, retries = 3, delayMs = 500): Promise
         avatarUrl: data.avatar_url || undefined,
       };
     }
-    
-    // If it's the last attempt or not a "not found" error, return null
+
     if (attempt === retries) {
-      console.warn(`Failed to fetch profile for user ${userId} after ${retries} attempts`, error);
+      console.warn(`Failed to fetch profile for user ${userId}`, error);
       return null;
     }
-    
-    // Wait before retrying
+
     await new Promise(resolve => setTimeout(resolve, delayMs));
   }
-  
+
   return null;
 }
 
+
+// 🔍 FETCH ROLE
 async function fetchRole(userId: string): Promise<"admin" | "user"> {
   const { data } = await supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", userId);
+
   if (data && data.some((r) => r.role === "admin")) return "admin";
   return "user";
 }
 
+
+// 🔥 PROVIDER
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [role, setRole] = useState<"admin" | "user" | null>(null);
   const [loading, setLoading] = useState(true);
+
   const isAuthenticated = !!authUser;
 
   const loadUserData = async (user: User) => {
@@ -113,14 +134,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (_event, session) => {
         const user = session?.user ?? null;
         setAuthUser(user);
+
         if (user) {
-          // Increase delay to give trigger more time to create profile
-          // Use 1000ms instead of 0 to allow database triggers to complete
           setTimeout(() => loadUserData(user), 1000);
         } else {
           setCurrentUser(null);
           setRole(null);
         }
+
         setLoading(false);
       }
     );
@@ -128,6 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       const user = session?.user ?? null;
       setAuthUser(user);
+
       if (user) {
         loadUserData(user).then(() => setLoading(false));
       } else {
@@ -138,12 +160,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+
+  // 🔥 LOGIN (FIXED)
   const login = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { success: false, error: error.message };
+
+    if (error) {
+      return { success: false, error: mapAuthError(error.message) };
+    }
+
     return { success: true };
   };
 
+
+  // 🔥 LOGOUT
   const logout = async () => {
     await supabase.auth.signOut();
     setAuthUser(null);
@@ -151,6 +181,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRole(null);
   };
 
+
+  // 🔥 REGISTER (FIXED)
   const register = async (userData: {
     fullName: string;
     email: string;
@@ -173,20 +205,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       },
     });
-    if (error) return { success: false, error: error.message };
+
+    if (error) {
+      return { success: false, error: mapAuthError(error.message) };
+    }
+
     return { success: true };
   };
 
+
+  // 🔧 UPDATE USER
   const updateCurrentUser = async (updates: Partial<UserProfile>) => {
     if (!authUser) return;
-    const dbUpdates: {
-      full_name?: string;
-      phone?: string;
-      position?: string;
-      company?: string;
-      project?: string;
-      avatar_url?: string;
-    } = {};
+
+    const dbUpdates: any = {};
+
     if (updates.fullName !== undefined) dbUpdates.full_name = updates.fullName;
     if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
     if (updates.position !== undefined) dbUpdates.position = updates.position;
@@ -202,9 +235,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCurrentUser((prev) => prev ? { ...prev, ...updates } : prev);
   };
 
+
   const refreshProfile = async () => {
     if (authUser) await loadUserData(authUser);
   };
+
 
   return (
     <AuthContext.Provider
