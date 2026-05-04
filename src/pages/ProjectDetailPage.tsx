@@ -20,11 +20,6 @@ function getProgressBarColor(progress: number) {
   return "[&>div]:bg-[hsl(var(--destructive))]";
 }
 
-function getProgressColorHex(progress: number) {
-  if (progress >= 100) return "#16a34a";
-  if (progress >= 50) return "#eab308";
-  return "#dc2626";
-}
 
 const templateColors: Record<string, string> = {
   "Laporan Harian": "bg-primary/10 text-primary border-primary/20",
