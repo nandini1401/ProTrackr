@@ -131,19 +131,21 @@ const RegisterPage = () => {
           </div>
           <div className="space-y-2">
             <Label>Project yang Dipegang</Label>
-            {projects.length > 0 ? (
+            {!form.company ? (
+              <Input disabled placeholder="Pilih perusahaan terlebih dahulu" />
+            ) : filteredProjects.length > 0 ? (
               <Select value={form.project} onValueChange={(v) => handleChange("project", v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih project" />
                 </SelectTrigger>
                 <SelectContent>
-                  {projects.map((p) => (
+                  {filteredProjects.map((p) => (
                     <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             ) : (
-              <Input placeholder="Belum ada project — ketik manual atau kosongkan" value={form.project} onChange={(e) => handleChange("project", e.target.value)} />
+              <Input placeholder="Belum ada project untuk perusahaan ini — ketik manual atau kosongkan" value={form.project} onChange={(e) => handleChange("project", e.target.value)} />
             )}
           </div>
           <div className="space-y-2">
