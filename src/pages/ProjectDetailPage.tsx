@@ -122,12 +122,13 @@ const ProjectDetailPage = () => {
 
         filteredForms.forEach((form, idx) => {
           const rowData = [
-            form.date || "-",
             form.formNumber,
             form.reporterName,
-            String(form.manpower || 0),
+            form.reporterPhone || "-",
+            form.project || project.name,
+            form.date || "-",
             form.workToday || "-",
-            form.materials || "-",
+            form.status || "-",
           ];
           // compute row height based on wrapped text
           const wrapped = rowData.map((txt, i) => doc.splitTextToSize(txt, cols[i].w - 4));
