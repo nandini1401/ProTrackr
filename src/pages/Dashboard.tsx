@@ -8,7 +8,25 @@ import {
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 const Dashboard = () => {
-  const { projects, forms, tasks, people, activities } = useSharedData();
+  const { projects, forms, people } = useSharedData();
+
+  // Realtime notifications: derived from incoming form submissions
+  const notifications = [...forms]
+    .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
+    .slice(0, 10);
+
+  const formatRelative = (dateStr: string) => {
+    if (!dateStr) return "-";
+    const d = new Date(dateStr);
+    const diff = Date.now() - d.getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Baru saja";
+    if (mins < 60) return `${mins} menit lalu`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs} jam lalu`;
+    const days = Math.floor(hrs / 24);
+    return `${days} hari lalu`;
+  };
 
   const activeProjects = projects.filter(p => p.status !== "completed");
   const avgProgress = projects.length ? Math.round(projects.reduce((a, p) => a + p.progress, 0) / projects.length) : 0;
