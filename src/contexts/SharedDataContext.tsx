@@ -454,17 +454,28 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
   }, [fetchAll]);
 
   const addForm = useCallback(async (form: Omit<FormData, "id">) => {
-    const project = projects.find(p => p.name === form.project);
+    let project = projects.find(p => p.name === form.project);
+    if (!project && form.project) {
+      const { data: projectRow, error: projectError } = await supabase
+        .from("projects")
+        .select("id,name")
+        .eq("name", form.project)
+        .maybeSingle();
+      if (projectError) throw projectError;
+      if (projectRow) project = { id: projectRow.id, name: projectRow.name } as ProjectData;
+    }
     const { data: { user } } = await supabase.auth.getUser();
     const photosTag = form.reportPhotos?.length ? `\n__PHOTOS__:${JSON.stringify(form.reportPhotos)}` : "";
-    if (!project) return;
-    await supabase.from("forms").insert({
+    if (!project) throw new Error("Project laporan tidak ditemukan");
+    if (!user) throw new Error("User belum login");
+    const { error } = await supabase.from("forms").insert({
       form_number: form.formNumber, project_id: project.id,
       template_type: form.templateType, date: form.date || null,
       status: form.status, progress: form.progress, work_today: form.workToday,
       manpower: form.manpower, materials: (form.materials || "") + photosTag,
-      submitted_by: user?.id || null,
+      submitted_by: user.id,
     });
+    if (error) throw error;
     // Auto-save report photos as project files (Berkas) folder = project name
     if (form.reportPhotos && form.reportPhotos.length > 0) {
       const rows = form.reportPhotos.map((url, i) => ({
@@ -473,7 +484,8 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
         url,
         date: form.date || null,
       }));
-      await supabase.from("project_files").insert(rows);
+      const { error: fileError } = await supabase.from("project_files").insert(rows);
+      if (fileError) console.warn("Report photos were not saved to files:", fileError);
     }
     await fetchAll();
   }, [projects, fetchAll]);
