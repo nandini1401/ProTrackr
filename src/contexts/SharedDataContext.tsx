@@ -274,6 +274,7 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
         reporterAvatar: reporter?.avatar || reporterAvatarFromProfile || "",
         reportPhotos: photos,
         submittedBy: f.submitted_by,
+        createdAt: f.created_at || "",
       };
     });
     formCounter = formsData.length;
