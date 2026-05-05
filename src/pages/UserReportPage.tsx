@@ -51,6 +51,8 @@ const UserReportPage = () => {
     setNotes("");
     setPhotos([]);
     toast.success("Laporan berhasil dikirim!");
+    setSubmitting(false);
+
 
     // Save to user's own report history (local cache, instant)
     const existing = JSON.parse(localStorage.getItem(`user_reports_${currentUser.id}`) || "[]");
