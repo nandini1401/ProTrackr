@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
 import { useSharedData } from "@/contexts/SharedDataContext";
@@ -9,6 +10,11 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 const Dashboard = () => {
   const { projects, forms, people } = useSharedData();
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 30000);
+    return () => clearInterval(id);
+  }, []);
 
   // Realtime notifications: derived from incoming form submissions, sorted by createdAt timestamp
   const notifications = [...forms]
