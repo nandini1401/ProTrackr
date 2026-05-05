@@ -69,6 +69,7 @@ export interface FormData {
   reporterAvatar: string;
   reportPhotos: string[];
   submittedBy?: string | null;
+  createdAt?: string;
 }
 
 export interface FileData {
