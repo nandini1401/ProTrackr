@@ -8,6 +8,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Camera, Send, FileText } from "lucide-react";
 
+const saveLocalReportCache = (userId: string, report: any) => {
+  try {
+    const existing = JSON.parse(localStorage.getItem(`user_reports_${userId}`) || "[]");
+    const lightweightReport = { ...report, photos: [] };
+    const compact = [lightweightReport, ...existing]
+      .slice(0, 25)
+      .map((item: any) => ({ ...item, photos: [] }));
+    localStorage.setItem(`user_reports_${userId}`, JSON.stringify(compact));
+  } catch (err) {
+    try { localStorage.removeItem(`user_reports_${userId}`); } catch {}
+    console.warn("Local report cache skipped:", err);
+  }
+};
+
 const UserReportPage = () => {
   const { currentUser } = useAuth();
   const { addForm, addFileToProject, addActivity } = useSharedData();
@@ -54,9 +68,9 @@ const UserReportPage = () => {
     setSubmitting(false);
 
 
-    // Save to user's own report history (local cache, instant)
-    const existing = JSON.parse(localStorage.getItem(`user_reports_${currentUser.id}`) || "[]");
-    existing.unshift({
+    // Save to user's own report history as a lightweight cache only.
+    // Never let full browser storage block sending the report to admin.
+    saveLocalReportCache(currentUser.id, {
       id: crypto.randomUUID(),
       formNumber,
       date: today,
@@ -65,7 +79,6 @@ const UserReportPage = () => {
       photos: snapshotPhotos,
       submittedAt: new Date().toISOString(),
     });
-    localStorage.setItem(`user_reports_${currentUser.id}`, JSON.stringify(existing));
 
     // Fire-and-forget the network insert; realtime will sync admin views
     addForm({
