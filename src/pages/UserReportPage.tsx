@@ -32,63 +32,65 @@ const UserReportPage = () => {
     });
   };
 
-  const handleSubmitReport = (e: React.FormEvent) => {
+  const handleSubmitReport = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!workDescription.trim()) {
       toast.error("Deskripsi pekerjaan wajib diisi");
       return;
     }
     setSubmitting(true);
-    setTimeout(() => {
-      const formNumber = generateFormNumber();
-      const today = new Date().toISOString().split("T")[0];
 
-      // Save to shared forms (visible to admin)
-      addForm({
-        formNumber,
-        project: currentUser.project,
-        templateType: "Laporan Harian",
-        date: today,
-        status: "submitted",
-        progress: 0,
-        workToday: workDescription,
-        manpower: 1,
-        materials: notes || "-",
-        reporterName: currentUser.fullName,
-        reporterPhone: currentUser.phone,
-        reporterAvatar: currentUser.avatarUrl || `https://i.pravatar.cc/150?u=${currentUser.email}`,
-        reportPhotos: photos,
-      });
+    const formNumber = generateFormNumber();
+    const today = new Date().toISOString().split("T")[0];
+    const snapshotWork = workDescription;
+    const snapshotNotes = notes;
+    const snapshotPhotos = photos;
 
-      // Note: photos are auto-archived to Berkas inside addForm — do not duplicate here.
+    // Reset UI immediately for snappy feel
+    setWorkDescription("");
+    setNotes("");
+    setPhotos([]);
+    toast.success("Laporan berhasil dikirim!");
 
-      // Also save to user's own report history
-      const existing = JSON.parse(localStorage.getItem(`user_reports_${currentUser.id}`) || "[]");
-      existing.unshift({
-        id: crypto.randomUUID(),
-        formNumber,
-        date: today,
-        workDescription,
-        notes,
-        photos,
-        submittedAt: new Date().toISOString(),
-      });
-      localStorage.setItem(`user_reports_${currentUser.id}`, JSON.stringify(existing));
+    // Save to user's own report history (local cache, instant)
+    const existing = JSON.parse(localStorage.getItem(`user_reports_${currentUser.id}`) || "[]");
+    existing.unshift({
+      id: crypto.randomUUID(),
+      formNumber,
+      date: today,
+      workDescription: snapshotWork,
+      notes: snapshotNotes,
+      photos: snapshotPhotos,
+      submittedAt: new Date().toISOString(),
+    });
+    localStorage.setItem(`user_reports_${currentUser.id}`, JSON.stringify(existing));
 
-      // Add activity for real-time dashboard
-      addActivity({
-        action: `Laporan harian submitted (${formNumber})`,
-        project: currentUser.project,
-        user: currentUser.fullName,
-        userAvatar: currentUser.avatarUrl,
-      });
+    // Fire-and-forget the network insert; realtime will sync admin views
+    addForm({
+      formNumber,
+      project: currentUser.project,
+      templateType: "Laporan Harian",
+      date: today,
+      status: "submitted",
+      progress: 0,
+      workToday: snapshotWork,
+      manpower: 1,
+      materials: snapshotNotes || "-",
+      reporterName: currentUser.fullName,
+      reporterPhone: currentUser.phone,
+      reporterAvatar: currentUser.avatarUrl || "",
+      reportPhotos: snapshotPhotos,
+    }).catch((err) => {
+      console.error("Gagal kirim laporan:", err);
+      toast.error("Gagal sinkron ke server, laporan tersimpan lokal");
+    }).finally(() => setSubmitting(false));
 
-      setWorkDescription("");
-      setNotes("");
-      setPhotos([]);
-      setSubmitting(false);
-      toast.success("Laporan berhasil dikirim!");
-    }, 500);
+    addActivity({
+      action: `Laporan harian submitted (${formNumber})`,
+      project: currentUser.project,
+      user: currentUser.fullName,
+      userAvatar: currentUser.avatarUrl,
+    });
   };
 
   return (

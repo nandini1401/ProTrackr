@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSharedData } from "@/contexts/SharedDataContext";
 import { UserLayout } from "@/components/UserLayout";
@@ -32,9 +32,30 @@ function saveUserReports(userId: string, reports: UserReport[]) {
 }
 
 const UserHistoryPage = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, authUser } = useAuth();
   const { forms, updateForm, deleteForm, addActivity } = useSharedData();
   const [reports, setReports] = useState<UserReport[]>(() => currentUser ? getUserReports(currentUser.id) : []);
+
+  // Rehydrate from server (survives logout/refresh) and merge with any local-only entries
+  useEffect(() => {
+    if (!currentUser || !authUser) return;
+    const myForms = forms.filter(f => f.submittedBy === authUser.id);
+    const fromServer: UserReport[] = myForms.map(f => ({
+      id: f.id,
+      formNumber: f.formNumber,
+      date: f.date,
+      workDescription: f.workToday,
+      notes: f.materials === "-" ? "" : f.materials,
+      photos: f.reportPhotos || [],
+      submittedAt: f.date,
+    }));
+    const local = getUserReports(currentUser.id);
+    const serverNumbers = new Set(fromServer.map(r => r.formNumber));
+    const localOnly = local.filter(r => r.formNumber && !serverNumbers.has(r.formNumber));
+    const merged = [...fromServer, ...localOnly].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    setReports(merged);
+    saveUserReports(currentUser.id, merged);
+  }, [forms, currentUser, authUser]);
   const [editingReport, setEditingReport] = useState<UserReport | null>(null);
   const [editWork, setEditWork] = useState("");
   const [editNotes, setEditNotes] = useState("");

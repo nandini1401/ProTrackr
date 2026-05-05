@@ -8,7 +8,25 @@ import {
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 const Dashboard = () => {
-  const { projects, forms, tasks, people, activities } = useSharedData();
+  const { projects, forms, people } = useSharedData();
+
+  // Realtime notifications: derived from incoming form submissions
+  const notifications = [...forms]
+    .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
+    .slice(0, 10);
+
+  const formatRelative = (dateStr: string) => {
+    if (!dateStr) return "-";
+    const d = new Date(dateStr);
+    const diff = Date.now() - d.getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Baru saja";
+    if (mins < 60) return `${mins} menit lalu`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs} jam lalu`;
+    const days = Math.floor(hrs / 24);
+    return `${days} hari lalu`;
+  };
 
   const activeProjects = projects.filter(p => p.status !== "completed");
   const avgProgress = projects.length ? Math.round(projects.reduce((a, p) => a + p.progress, 0) / projects.length) : 0;
@@ -48,21 +66,31 @@ const Dashboard = () => {
         </div>
 
         <div className="bg-card rounded-lg border p-6">
-          <h3 className="text-base font-semibold text-foreground mb-4">Aktivitas Terbaru</h3>
-          {activities.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Belum ada aktivitas</p>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-foreground">Notifikasi Laporan Masuk</h3>
+            <span className="text-xs text-muted-foreground">Realtime</span>
+          </div>
+          {notifications.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Belum ada laporan masuk</p>
           ) : (
-            <div className="space-y-4">
-              {activities.slice(0, 10).map((activity) => (
-                <div key={activity.id} className="flex gap-3 items-start">
-                  {activity.userAvatar ? (
-                    <img src={activity.userAvatar} alt="" className="mt-0.5 h-7 w-7 rounded-full object-cover flex-shrink-0" />
+            <div className="space-y-3">
+              {notifications.map((n) => (
+                <div key={n.id} className="flex gap-3 items-start p-3 rounded-lg hover:bg-muted/40 transition-colors">
+                  {n.reporterAvatar ? (
+                    <img src={n.reporterAvatar} alt="" className="h-9 w-9 rounded-full object-cover flex-shrink-0" />
                   ) : (
-                    <div className="mt-1.5 h-2 w-2 rounded-full bg-primary flex-shrink-0" />
+                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <FileText className="h-4 w-4 text-primary" />
+                    </div>
                   )}
-                  <div className="min-w-0">
-                    <p className="text-sm text-foreground">{activity.action}</p>
-                    <p className="text-xs text-muted-foreground">{activity.project} · {activity.user} · {activity.time}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-foreground">
+                      <span className="font-medium">{n.reporterName}</span> mengirim laporan{" "}
+                      <span className="font-medium">{n.formNumber}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {n.project} · {n.date} · {formatRelative(n.date)}
+                    </p>
                   </div>
                 </div>
               ))}
