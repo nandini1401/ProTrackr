@@ -28,7 +28,13 @@ function getUserReports(userId: string): UserReport[] {
 }
 
 function saveUserReports(userId: string, reports: UserReport[]) {
-  localStorage.setItem(`user_reports_${userId}`, JSON.stringify(reports));
+  try {
+    const compact = reports.slice(0, 25).map((report) => ({ ...report, photos: [] }));
+    localStorage.setItem(`user_reports_${userId}`, JSON.stringify(compact));
+  } catch (err) {
+    try { localStorage.removeItem(`user_reports_${userId}`); } catch {}
+    console.warn("Local report history cache skipped:", err);
+  }
 }
 
 const UserHistoryPage = () => {
