@@ -53,11 +53,6 @@ const UserReportPage = () => {
     toast.success("Laporan berhasil dikirim!");
     setSubmitting(false);
 
-    // Reset UI immediately for snappy feel
-    setWorkDescription("");
-    setNotes("");
-    setPhotos([]);
-    toast.success("Laporan berhasil dikirim!");
 
     // Save to user's own report history (local cache, instant)
     const existing = JSON.parse(localStorage.getItem(`user_reports_${currentUser.id}`) || "[]");
