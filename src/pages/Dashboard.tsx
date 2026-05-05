@@ -95,7 +95,7 @@ const Dashboard = () => {
                       <span className="font-medium">{n.formNumber}</span>
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
-                      {n.project} · {n.date} · {formatRelative(n.date)}
+                      {n.project} · {n.date} · {formatRelative(n.createdAt || n.date)}
                     </p>
                   </div>
                 </div>
