@@ -158,8 +158,21 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
   });
   const [loading, setLoading] = useState(true);
 
-  // Persist activities locally (admin-only feed)
-  useEffect(() => { localStorage.setItem("shared_activities", JSON.stringify(activities)); }, [activities]);
+  // Persist activities locally (admin-only feed) — cap size + strip heavy fields to avoid quota errors
+  useEffect(() => {
+    try {
+      const trimmed = activities.slice(0, 50).map((a: any) => {
+        const { userAvatar, ...rest } = a || {};
+        // Drop base64/data-url avatars; keep small http urls only
+        const safeAvatar = typeof userAvatar === "string" && !userAvatar.startsWith("data:") && userAvatar.length < 300 ? userAvatar : undefined;
+        return safeAvatar ? { ...rest, userAvatar: safeAvatar } : rest;
+      });
+      localStorage.setItem("shared_activities", JSON.stringify(trimmed));
+    } catch (err) {
+      try { localStorage.removeItem("shared_activities"); } catch {}
+      console.warn("Activity persistence skipped:", err);
+    }
+  }, [activities]);
 
   const fetchAll = useCallback(async () => {
     const [comp, peep, proj, tsk, frm, pf, prof] = await Promise.all([
