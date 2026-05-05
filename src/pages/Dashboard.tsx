@@ -10,17 +10,23 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 const Dashboard = () => {
   const { projects, forms, people } = useSharedData();
 
-  // Realtime notifications: derived from incoming form submissions
+  // Realtime notifications: derived from incoming form submissions, sorted by createdAt timestamp
   const notifications = [...forms]
-    .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
+    .sort((a, b) => {
+      const ta = a.createdAt ? new Date(a.createdAt).getTime() : new Date(a.date || 0).getTime();
+      const tb = b.createdAt ? new Date(b.createdAt).getTime() : new Date(b.date || 0).getTime();
+      return tb - ta;
+    })
     .slice(0, 10);
 
-  const formatRelative = (dateStr: string) => {
-    if (!dateStr) return "-";
-    const d = new Date(dateStr);
+  const formatRelative = (iso: string) => {
+    if (!iso) return "-";
+    const d = new Date(iso);
     const diff = Date.now() - d.getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "Baru saja";
+    const secs = Math.floor(diff / 1000);
+    if (secs < 30) return "Baru saja";
+    if (secs < 60) return `${secs} detik lalu`;
+    const mins = Math.floor(secs / 60);
     if (mins < 60) return `${mins} menit lalu`;
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs} jam lalu`;
