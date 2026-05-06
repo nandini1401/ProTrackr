@@ -20,7 +20,7 @@ function getProgressBarColor(progress: number) {
 }
 
 const ProjectsPage = () => {
-  const { projects, companies, addProject, updateProject, deleteProject } = useSharedData();
+  const { projects, companies, addProject, updateProject, deleteProject, refreshFromRegistrations } = useSharedData();
   const [newCompany, setNewCompany] = useState("");
   const [editCompany, setEditCompany] = useState("");
   const [view, setView] = useState<"list" | "grid">("grid");
