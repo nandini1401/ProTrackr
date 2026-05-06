@@ -65,11 +65,81 @@
   body {
     @apply bg-background text-foreground font-sans;
     font-family: 'Inter', sans-serif;
+    background-image:
+      radial-gradient(ellipse 80% 60% at 10% 0%, hsl(217 91% 50% / 0.10), transparent 60%),
+      radial-gradient(ellipse 70% 50% at 100% 10%, hsl(280 80% 60% / 0.08), transparent 60%),
+      radial-gradient(ellipse 60% 50% at 50% 100%, hsl(199 89% 48% / 0.08), transparent 60%);
+    background-attachment: fixed;
   }
 }
 
 @layer utilities {
   .stat-card {
-    @apply bg-card rounded-lg border p-6 shadow-sm transition-shadow hover:shadow-md;
+    @apply relative rounded-xl border p-6 transition-all duration-300;
+    background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(220 20% 99%) 100%);
+    box-shadow:
+      0 1px 0 0 hsl(0 0% 100% / 0.8) inset,
+      0 -1px 0 0 hsl(220 20% 90% / 0.5) inset,
+      0 10px 25px -10px hsl(220 30% 30% / 0.15),
+      0 4px 10px -4px hsl(220 30% 30% / 0.08);
+    transform: perspective(1000px) translateZ(0);
+    will-change: transform;
   }
+  .stat-card:hover {
+    transform: perspective(1000px) translateY(-4px) rotateX(2deg) rotateY(-2deg);
+    box-shadow:
+      0 1px 0 0 hsl(0 0% 100% / 0.9) inset,
+      0 20px 40px -12px hsl(217 91% 40% / 0.25),
+      0 8px 16px -6px hsl(220 30% 30% / 0.12);
+  }
+
+  /* Global 3D upgrades applied without touching components */
+  .bg-card {
+    background-image: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(220 20% 99%) 100%);
+    box-shadow:
+      0 1px 0 0 hsl(0 0% 100% / 0.7) inset,
+      0 8px 20px -10px hsl(220 30% 30% / 0.12);
+  }
+
+  button, .btn, [role="button"] {
+    transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+  }
+  button:hover:not(:disabled), [role="button"]:hover {
+    transform: translateY(-1px);
+  }
+  button:active:not(:disabled), [role="button"]:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  .bg-primary {
+    background-image: linear-gradient(135deg, hsl(217 91% 55%) 0%, hsl(217 91% 45%) 100%);
+    box-shadow:
+      0 1px 0 0 hsl(0 0% 100% / 0.25) inset,
+      0 -2px 0 0 hsl(217 91% 35% / 0.4) inset,
+      0 8px 20px -8px hsl(217 91% 45% / 0.5);
+  }
+  .bg-destructive {
+    background-image: linear-gradient(135deg, hsl(0 84% 65%) 0%, hsl(0 84% 55%) 100%);
+    box-shadow: 0 1px 0 0 hsl(0 0% 100% / 0.25) inset, 0 8px 20px -8px hsl(0 84% 50% / 0.5);
+  }
+  .bg-success {
+    background-image: linear-gradient(135deg, hsl(142 72% 47%) 0%, hsl(142 72% 38%) 100%);
+    box-shadow: 0 1px 0 0 hsl(0 0% 100% / 0.25) inset, 0 8px 20px -8px hsl(142 72% 40% / 0.5);
+  }
+
+  [data-sidebar="sidebar"] {
+    background-image: linear-gradient(180deg, hsl(220 25% 14%) 0%, hsl(220 25% 10%) 100%);
+    box-shadow: inset -1px 0 0 hsl(220 25% 22% / 0.6), 4px 0 24px -8px hsl(220 30% 5% / 0.4);
+  }
+
+  .rounded-lg, .rounded-xl {
+    backface-visibility: hidden;
+  }
+
+  /* Subtle float animation for hero/stat icons */
+  @keyframes float-3d {
+    0%, 100% { transform: translateY(0) rotateX(0); }
+    50% { transform: translateY(-3px) rotateX(6deg); }
+  }
+  .float-3d { animation: float-3d 4s ease-in-out infinite; }
 }

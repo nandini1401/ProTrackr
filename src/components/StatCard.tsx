@@ -33,7 +33,7 @@ export function StatCard({ title, value, icon: Icon, change, changeType = "neutr
             </p>
           )}
         </div>
-        <div className={`p-3 rounded-lg ${colorMap[color]}`}>
+        <div className={`p-3 rounded-xl float-3d shadow-lg ring-1 ring-white/40 ${colorMap[color]}`}>
           <Icon className="h-5 w-5" />
         </div>
       </div>
