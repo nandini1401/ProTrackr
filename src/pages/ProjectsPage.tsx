@@ -20,7 +20,7 @@ function getProgressBarColor(progress: number) {
 }
 
 const ProjectsPage = () => {
-  const { projects, companies, addProject, updateProject, deleteProject } = useSharedData();
+  const { projects, companies, addProject, updateProject, deleteProject, refreshFromRegistrations } = useSharedData();
   const [newCompany, setNewCompany] = useState("");
   const [editCompany, setEditCompany] = useState("");
   const [view, setView] = useState<"list" | "grid">("grid");
@@ -91,7 +91,7 @@ const ProjectsPage = () => {
             <Button variant={view === "list" ? "default" : "outline"} size="icon" onClick={() => setView("list")}>
               <List className="h-4 w-4" />
             </Button>
-            <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (o) setNewCompany(""); }}>
+            <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (o) { setNewCompany(""); refreshFromRegistrations(); } }}>
               <DialogTrigger asChild>
                 <Button size="sm"><Plus className="mr-2 h-4 w-4" />Tambah Project</Button>
               </DialogTrigger>
@@ -103,9 +103,13 @@ const ProjectsPage = () => {
                   <div>
                     <Label>Perusahaan</Label>
                     <Select value={newCompany} onValueChange={setNewCompany} required>
-                      <SelectTrigger><SelectValue placeholder={companies.length ? "Pilih perusahaan" : "Belum ada perusahaan"} /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder={companies.length ? "Pilih perusahaan" : "Belum ada perusahaan — buat dulu di menu Companies"} /></SelectTrigger>
                       <SelectContent>
-                        {companies.map((c) => (<SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>))}
+                        {companies.length === 0 ? (
+                          <div className="px-3 py-2 text-sm text-muted-foreground">Belum ada perusahaan</div>
+                        ) : (
+                          companies.map((c) => (<SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
