@@ -93,8 +93,12 @@ export function AppSidebar() {
 
       <SidebarFooter className="border-t border-sidebar-border p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sidebar-accent">
-            <span className="text-xs font-medium text-sidebar-accent-foreground">{initials}</span>
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sidebar-accent overflow-hidden">
+            {settings.avatarUrl ? (
+              <img src={settings.avatarUrl} alt={settings.fullName} className="h-full w-full object-cover object-center" />
+            ) : (
+              <span className="text-xs font-medium text-sidebar-accent-foreground">{initials}</span>
+            )}
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
