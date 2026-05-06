@@ -5,6 +5,7 @@ interface UserSettings {
   email: string;
   jobTitle: string;
   phone: string;
+  avatarUrl?: string;
 }
 
 interface UserSettingsContextType {
@@ -24,6 +25,7 @@ function getInitialSettings(): UserSettings {
     email: "admin@company.com",
     jobTitle: "System Administrator",
     phone: "+62 812 3456 7890",
+    avatarUrl: "",
   };
 }
 
@@ -37,7 +39,11 @@ export function UserSettingsProvider({ children }: { children: ReactNode }) {
 
   const updateSettings = (s: UserSettings) => {
     setSettings(s);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    } catch (e) {
+      console.warn("Failed to save settings", e);
+    }
   };
 
   return (
