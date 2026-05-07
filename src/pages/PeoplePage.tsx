@@ -163,11 +163,13 @@ const PeoplePage = () => {
                   <span className="font-medium text-foreground">{person.progress}%</span>
                 </div>
                 <Progress value={person.progress} className="h-2" />
+                {person.project && (
+                  <p className="text-xs text-muted-foreground pt-1">
+                    <span className="font-medium text-foreground">Project:</span> {person.project}
+                  </p>
+                )}
               </div>
-              <div className="flex items-center justify-between">
-                <Badge variant="outline" className={roleColors[person.role] || roleColors.viewer}>
-                  {roleLabels[person.role] || person.role}
-                </Badge>
+              <div className="flex items-center justify-end">
                 <span className="text-xs text-muted-foreground">Mulai: {person.startDate}</span>
               </div>
             </div>
