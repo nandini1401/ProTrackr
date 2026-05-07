@@ -94,7 +94,7 @@ export function UserSidebar() {
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-sidebar-accent-foreground truncate">{currentUser?.fullName}</p>
-              <p className="text-xs text-sidebar-muted truncate">{currentUser?.email}</p>
+              <p className="text-xs text-sidebar-muted truncate">{currentUser?.position || "Pekerja"}</p>
             </div>
           )}
           {!collapsed && (
