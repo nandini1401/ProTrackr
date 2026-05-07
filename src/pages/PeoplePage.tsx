@@ -95,22 +95,7 @@ const PeoplePage = () => {
       {person && (
         <div><Label>Progress (%)</Label><Input name="progress" type="number" min="0" max="100" defaultValue={person.progress} /></div>
       )}
-  const PersonForm = ({ onSubmit, person }: { onSubmit: (e: React.FormEvent<HTMLFormElement>) => void; person?: PersonData | null }) => (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div><Label>Foto</Label><Input name="photo" type="file" accept="image/*" /></div>
-      <div><Label>Nama</Label><Input name="name" defaultValue={person?.name} required /></div>
-      <div><Label>Email</Label><Input name="email" type="email" defaultValue={person?.email} required /></div>
-      <div><Label>No. HP</Label><Input name="phone" defaultValue={person?.phone} required /></div>
-      <div><Label>Perusahaan</Label><Input name="company" defaultValue={person?.company} required /></div>
-      <div><Label>Jabatan</Label><Input name="jobTitle" defaultValue={person?.jobTitle} required /></div>
-      {person && (
-        <div><Label>Progress (%)</Label><Input name="progress" type="number" min="0" max="100" defaultValue={person.progress} /></div>
-      )}
       <input type="hidden" name="role" value={person?.role || "viewer"} />
-      <div><Label>Tanggal Mulai Kerja</Label><Input name="startDate" type="date" defaultValue={person?.startDate} required /></div>
-      <Button type="submit" className="w-full">Simpan</Button>
-    </form>
-  );
       <div><Label>Tanggal Mulai Kerja</Label><Input name="startDate" type="date" defaultValue={person?.startDate} required /></div>
       <Button type="submit" className="w-full">Simpan</Button>
     </form>
