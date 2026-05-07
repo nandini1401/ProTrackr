@@ -14,6 +14,7 @@ export interface PersonData {
   avatar: string;
   progress: number;
   startDate: string;
+  project?: string;
 }
 
 export interface CompanyData {
@@ -215,6 +216,7 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
         avatar,
         progress: p.progress || 0,
         startDate: p.start_date || "",
+        project: matchProfile?.project || "",
       };
     });
 
