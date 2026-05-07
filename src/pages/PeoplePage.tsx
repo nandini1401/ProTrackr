@@ -95,14 +95,7 @@ const PeoplePage = () => {
       {person && (
         <div><Label>Progress (%)</Label><Input name="progress" type="number" min="0" max="100" defaultValue={person.progress} /></div>
       )}
-      <div><Label>Role</Label>
-        <select name="role" defaultValue={person?.role || "viewer"} className="w-full rounded-md border bg-background px-3 py-2 text-sm">
-          <option value="viewer">Viewer</option>
-          <option value="engineer">Engineer</option>
-          <option value="project_manager">Project Manager</option>
-          <option value="admin">Admin</option>
-        </select>
-      </div>
+      <input type="hidden" name="role" value={person?.role || "viewer"} />
       <div><Label>Tanggal Mulai Kerja</Label><Input name="startDate" type="date" defaultValue={person?.startDate} required /></div>
       <Button type="submit" className="w-full">Simpan</Button>
     </form>
@@ -170,11 +163,13 @@ const PeoplePage = () => {
                   <span className="font-medium text-foreground">{person.progress}%</span>
                 </div>
                 <Progress value={person.progress} className="h-2" />
+                {person.project && (
+                  <p className="text-xs text-muted-foreground pt-1">
+                    <span className="font-medium text-foreground">Project:</span> {person.project}
+                  </p>
+                )}
               </div>
-              <div className="flex items-center justify-between">
-                <Badge variant="outline" className={roleColors[person.role] || roleColors.viewer}>
-                  {roleLabels[person.role] || person.role}
-                </Badge>
+              <div className="flex items-center justify-end">
                 <span className="text-xs text-muted-foreground">Mulai: {person.startDate}</span>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Bell, Search } from "lucide-react";
+import { AdminNotificationBell } from "@/components/AdminNotificationBell";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useSharedData } from "@/contexts/SharedDataContext";
@@ -99,8 +100,7 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
                   </div>
                 )}
               </div>
-
-
+              <AdminNotificationBell />
             </div>
           </header>
           <main className="flex-1 p-4 lg:p-6 overflow-auto">{children}</main>

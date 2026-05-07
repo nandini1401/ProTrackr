@@ -7,6 +7,7 @@ import {
   FolderOpen,
   Settings,
   LogOut,
+  MessageCircle,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -28,6 +29,7 @@ const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Projects", url: "/projects", icon: FolderKanban },
   { title: "People", url: "/people", icon: Users },
+  { title: "Pesan", url: "/messages", icon: MessageCircle },
   { title: "Perusahaan", url: "/companies", icon: Building2 },
   { title: "Forms", url: "/forms", icon: FileText },
   { title: "Berkas", url: "/files", icon: FolderOpen },

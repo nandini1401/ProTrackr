@@ -12,6 +12,7 @@ import ProjectDetailPage from "./pages/ProjectDetailPage";
 import FormsPage from "./pages/FormsPage";
 import CompaniesPage from "./pages/CompaniesPage";
 import PeoplePage from "./pages/PeoplePage";
+import MessagesPage from "./pages/MessagesPage";
 import FilesPage from "./pages/FilesPage";
 import ReportsPage from "./pages/ReportsPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -66,6 +67,7 @@ const App = () => (
                 <Route path="/projects" element={<AdminRoute><ProjectsPage /></AdminRoute>} />
                 <Route path="/projects/:id" element={<AdminRoute><ProjectDetailPage /></AdminRoute>} />
                 <Route path="/people" element={<AdminRoute><PeoplePage /></AdminRoute>} />
+                <Route path="/messages" element={<AdminRoute><MessagesPage /></AdminRoute>} />
                 <Route path="/companies" element={<AdminRoute><CompaniesPage /></AdminRoute>} />
                 <Route path="/forms" element={<AdminRoute><FormsPage /></AdminRoute>} />
                 <Route path="/files" element={<AdminRoute><FilesPage /></AdminRoute>} />
