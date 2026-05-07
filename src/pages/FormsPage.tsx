@@ -3,12 +3,17 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useSharedData } from "@/contexts/SharedDataContext";
-import { Search, Trash2 } from "lucide-react";
+import { useSharedData, FormData } from "@/contexts/SharedDataContext";
+import { Search, Trash2, MessageCircle, CalendarIcon } from "lucide-react";
 import { useState } from "react";
+import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { ChatDialog } from "@/components/ChatDialog";
 import { toast } from "sonner";
 
 const templateColors: Record<string, string> = {
@@ -20,15 +25,23 @@ const templateColors: Record<string, string> = {
 const FormsPage = () => {
   const { forms, deleteForm } = useSharedData();
   const [search, setSearch] = useState("");
-  const [selectedForm, setSelectedForm] = useState<typeof forms[0] | null>(null);
+  const [selectedForm, setSelectedForm] = useState<FormData | null>(null);
+  const [filterDate, setFilterDate] = useState<Date | undefined>(new Date());
+  const [chatTarget, setChatTarget] = useState<FormData | null>(null);
 
-  const filtered = forms.filter(
-    (f) =>
-      f.formNumber.toLowerCase().includes(search.toLowerCase()) ||
-      f.project.toLowerCase().includes(search.toLowerCase()) ||
-      f.workToday.toLowerCase().includes(search.toLowerCase()) ||
-      f.reporterName.toLowerCase().includes(search.toLowerCase())
-  );
+  const filterDateStr = filterDate ? format(filterDate, "yyyy-MM-dd") : "";
+
+  const filtered = forms.filter((f) => {
+    if (filterDateStr && f.date !== filterDateStr) return false;
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      f.formNumber.toLowerCase().includes(q) ||
+      f.project.toLowerCase().includes(q) ||
+      f.workToday.toLowerCase().includes(q) ||
+      f.reporterName.toLowerCase().includes(q)
+    );
+  });
 
   const handleDelete = (e: React.MouseEvent, id: string, formNumber: string) => {
     e.stopPropagation();
@@ -39,9 +52,25 @@ const FormsPage = () => {
   return (
     <DashboardLayout title="Forms - Laporan Harian">
       <div className="space-y-4">
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Cari laporan..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative max-w-sm flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Cari laporan..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("justify-start text-left font-normal", !filterDate && "text-muted-foreground")}>
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {filterDate ? format(filterDate, "dd MMM yyyy") : "Pilih tanggal"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={filterDate} onSelect={setFilterDate} initialFocus className={cn("p-3 pointer-events-auto")} />
+            </PopoverContent>
+          </Popover>
+          {filterDate && (
+            <Button variant="ghost" size="sm" onClick={() => setFilterDate(undefined)}>Tampilkan semua</Button>
+          )}
         </div>
 
         <div className="bg-card rounded-lg border overflow-x-auto">
@@ -91,23 +120,36 @@ const FormsPage = () => {
                   </td>
                   <td className="p-3"><StatusBadge status={form.status} /></td>
                   <td className="p-3">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={(e) => e.stopPropagation()}>
-                          <Trash2 className="h-4 w-4" />
+                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      {form.submittedBy && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary"
+                          onClick={() => setChatTarget(form)}
+                          title="Kirim pesan ke pelapor"
+                        >
+                          <MessageCircle className="h-4 w-4" />
                         </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Hapus Laporan?</AlertDialogTitle>
-                          <AlertDialogDescription>Laporan "{form.formNumber}" akan dihapus permanen.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Batal</AlertDialogCancel>
-                          <AlertDialogAction onClick={(e) => handleDelete(e, form.id, form.formNumber)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Hapus</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                      )}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Hapus Laporan?</AlertDialogTitle>
+                            <AlertDialogDescription>Laporan "{form.formNumber}" akan dihapus permanen.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                            <AlertDialogAction onClick={(e) => handleDelete(e, form.id, form.formNumber)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Hapus</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -116,7 +158,9 @@ const FormsPage = () => {
         </div>
 
         {filtered.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">Tidak ada laporan ditemukan</div>
+          <div className="text-center py-12 text-muted-foreground">
+            {filterDate ? `Tidak ada laporan pada ${format(filterDate, "dd MMM yyyy")}` : "Tidak ada laporan ditemukan"}
+          </div>
         )}
 
         <Dialog open={!!selectedForm} onOpenChange={() => setSelectedForm(null)}>
@@ -160,13 +204,29 @@ const FormsPage = () => {
                     </div>
                   </div>
                 )}
-                <div className="pt-2">
+                <div className="pt-2 flex items-center justify-between">
                   <StatusBadge status={selectedForm.status} />
+                  {selectedForm.submittedBy && (
+                    <Button size="sm" onClick={() => { setChatTarget(selectedForm); setSelectedForm(null); }}>
+                      <MessageCircle className="h-4 w-4 mr-2" /> Kirim Pesan
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
           </DialogContent>
         </Dialog>
+
+        {chatTarget && chatTarget.submittedBy && (
+          <ChatDialog
+            open={!!chatTarget}
+            onOpenChange={(o) => !o && setChatTarget(null)}
+            peerUserId={chatTarget.submittedBy}
+            peerName={chatTarget.reporterName}
+            formId={chatTarget.id}
+            formNumber={chatTarget.formNumber}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
