@@ -29,6 +29,8 @@ const UserReportPage = () => {
   const [notes, setNotes] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const userProjects = (currentUser?.project || "").split(",").map((s) => s.trim()).filter(Boolean);
+  const [selectedProject, setSelectedProject] = useState<string>(userProjects[0] || "");
 
   if (!currentUser) return null;
 
