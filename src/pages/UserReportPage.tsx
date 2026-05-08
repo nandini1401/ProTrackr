@@ -89,7 +89,7 @@ const UserReportPage = () => {
     // Fire-and-forget the network insert; realtime will sync admin views
     addForm({
       formNumber,
-      project: currentUser.project,
+      project: selectedProject || userProjects[0] || currentUser.project,
       templateType: "Laporan Harian",
       date: today,
       status: "submitted",
@@ -108,7 +108,7 @@ const UserReportPage = () => {
 
     addActivity({
       action: `Laporan harian submitted (${formNumber})`,
-      project: currentUser.project,
+      project: selectedProject || userProjects[0] || currentUser.project,
       user: currentUser.fullName,
       userAvatar: currentUser.avatarUrl,
     });
@@ -128,7 +128,7 @@ const UserReportPage = () => {
               </div>
               <h2 className="text-xl font-bold">Laporan Harian</h2>
             </div>
-            <p className="text-sm text-primary-foreground/80">Project: {currentUser.project}</p>
+            <p className="text-sm text-primary-foreground/80">Project: {userProjects.length > 1 ? (selectedProject || "(pilih di bawah)") : (currentUser.project || "-")}</p>
             <p className="text-sm text-primary-foreground/80">Tanggal: {new Date().toLocaleDateString("id-ID", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
           </div>
         </div>
