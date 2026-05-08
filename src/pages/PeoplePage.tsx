@@ -156,18 +156,11 @@ const PeoplePage = () => {
                   <Phone className="h-3 w-3" /><span>{person.phone}</span>
                 </div>
               </div>
-              <div className="space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Progress</span>
-                  <span className="font-medium text-foreground">{person.progress}%</span>
-                </div>
-                <Progress value={person.progress} className="h-2" />
-                {person.project && (
-                  <p className="text-xs text-muted-foreground pt-1">
-                    <span className="font-medium text-foreground">Project:</span> {person.project}
-                  </p>
-                )}
-              </div>
+              {person.project && (
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">Project:</span> {person.project}
+                </p>
+              )}
               <div className="flex items-center justify-end">
                 <span className="text-xs text-muted-foreground">Mulai: {person.startDate}</span>
               </div>
