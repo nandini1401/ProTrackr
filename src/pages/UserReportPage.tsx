@@ -54,6 +54,10 @@ const UserReportPage = () => {
       toast.error("Deskripsi pekerjaan wajib diisi");
       return;
     }
+    if (userProjects.length > 1 && !selectedProject) {
+      toast.error("Pilih project untuk laporan ini");
+      return;
+    }
     setSubmitting(true);
 
     const formNumber = generateFormNumber();
