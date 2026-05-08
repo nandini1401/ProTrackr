@@ -29,6 +29,8 @@ const UserReportPage = () => {
   const [notes, setNotes] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const userProjects = (currentUser?.project || "").split(",").map((s) => s.trim()).filter(Boolean);
+  const [selectedProject, setSelectedProject] = useState<string>(userProjects[0] || "");
 
   if (!currentUser) return null;
 
@@ -50,6 +52,10 @@ const UserReportPage = () => {
     e.preventDefault();
     if (!workDescription.trim()) {
       toast.error("Deskripsi pekerjaan wajib diisi");
+      return;
+    }
+    if (userProjects.length > 1 && !selectedProject) {
+      toast.error("Pilih project untuk laporan ini");
       return;
     }
     setSubmitting(true);
@@ -83,7 +89,7 @@ const UserReportPage = () => {
     // Fire-and-forget the network insert; realtime will sync admin views
     addForm({
       formNumber,
-      project: currentUser.project,
+      project: selectedProject || userProjects[0] || currentUser.project,
       templateType: "Laporan Harian",
       date: today,
       status: "submitted",
@@ -102,7 +108,7 @@ const UserReportPage = () => {
 
     addActivity({
       action: `Laporan harian submitted (${formNumber})`,
-      project: currentUser.project,
+      project: selectedProject || userProjects[0] || currentUser.project,
       user: currentUser.fullName,
       userAvatar: currentUser.avatarUrl,
     });
@@ -122,13 +128,29 @@ const UserReportPage = () => {
               </div>
               <h2 className="text-xl font-bold">Laporan Harian</h2>
             </div>
-            <p className="text-sm text-primary-foreground/80">Project: {currentUser.project}</p>
+            <p className="text-sm text-primary-foreground/80">Project: {userProjects.length > 1 ? (selectedProject || "(pilih di bawah)") : (currentUser.project || "-")}</p>
             <p className="text-sm text-primary-foreground/80">Tanggal: {new Date().toLocaleDateString("id-ID", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
           </div>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmitReport} className="bg-card rounded-2xl border shadow-sm p-6 space-y-5">
+          {userProjects.length > 1 && (
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Pilih Project</Label>
+              <select
+                value={selectedProject}
+                onChange={(e) => setSelectedProject(e.target.value)}
+                className="w-full rounded-xl border bg-background px-3 py-2 text-sm"
+                required
+              >
+                <option value="">-- Pilih project --</option>
+                {userProjects.map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Detail Pekerjaan Hari ini?</Label>
             <Textarea

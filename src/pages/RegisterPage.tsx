@@ -18,6 +18,7 @@ const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
   const [projects, setProjects] = useState<{ id: string; name: string; company_id: string | null }[]>([]);
+  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [form, setForm] = useState({
     fullName: "", email: "", phone: "", position: "",
     company: "", project: "", password: "", confirmPassword: "",
@@ -50,7 +51,15 @@ const RegisterPage = () => {
   const handleChange = (field: string, value: string) => {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
-      if (field === "company") next.project = "";
+      if (field === "company") { next.project = ""; setSelectedProjects([]); }
+      return next;
+    });
+  };
+
+  const toggleProject = (name: string) => {
+    setSelectedProjects((prev) => {
+      const next = prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name];
+      setForm((f) => ({ ...f, project: next.join(", ") }));
       return next;
     });
   };
@@ -134,16 +143,23 @@ const RegisterPage = () => {
             {!form.company ? (
               <Input disabled placeholder="Pilih perusahaan terlebih dahulu" />
             ) : filteredProjects.length > 0 ? (
-              <Select value={form.project} onValueChange={(v) => handleChange("project", v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredProjects.map((p) => (
-                    <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="border rounded-md p-2 space-y-1 max-h-44 overflow-y-auto">
+                {filteredProjects.map((p) => {
+                  const checked = selectedProjects.includes(p.name);
+                  return (
+                    <label key={p.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleProject(p.name)}
+                        className="h-4 w-4 accent-primary"
+                      />
+                      <span>{p.name}</span>
+                    </label>
+                  );
+                })}
+                <p className="text-xs text-muted-foreground px-2 pt-1">Boleh pilih lebih dari satu project</p>
+              </div>
             ) : (
               <Input placeholder="Belum ada project untuk perusahaan ini — ketik manual atau kosongkan" value={form.project} onChange={(e) => handleChange("project", e.target.value)} />
             )}
