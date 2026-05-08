@@ -98,7 +98,7 @@ const RegisterPage = () => {
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <img src="/logo-protrackr.png" alt="Logo" className="mx-auto h-20 w-auto" />
-          <p className="text-sm text-muted-foreground">Daftar sebagai pekerja / user baru</p>
+          <p className="text-sm text-muted-foreground">Daftar Sebagai Pekerja Baru</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-card rounded-lg border p-6 space-y-4">
@@ -108,18 +108,18 @@ const RegisterPage = () => {
           </div>
           <div className="space-y-2">
             <Label>Email</Label>
-            <Input type="email" placeholder="email@contoh.com" value={form.email} onChange={(e) => handleChange("email", e.target.value)} required />
+            <Input type="email" placeholder="email@gmail.com" value={form.email} onChange={(e) => handleChange("email", e.target.value)} required />
           </div>
           <div className="space-y-2">
             <Label>Nomor HP</Label>
-            <Input placeholder="+62 812 xxxx xxxx" value={form.phone} onChange={(e) => handleChange("phone", e.target.value)} required />
+            <Input placeholder="0856 xxxx xxxx" value={form.phone} onChange={(e) => handleChange("phone", e.target.value)} required />
           </div>
           <div className="space-y-2">
-            <Label>Posisi / Jabatan</Label>
+            <Label>Posisi </Label>
             <Input placeholder="Contoh: Site Engineer" value={form.position} onChange={(e) => handleChange("position", e.target.value)} required />
           </div>
           <div className="space-y-2">
-            <Label>Dari Perusahaan</Label>
+            <Label>Perusahaan</Label>
             {companies.length > 0 ? (
               <Select value={form.company} onValueChange={(v) => handleChange("company", v)}>
                 <SelectTrigger>
@@ -134,12 +134,10 @@ const RegisterPage = () => {
             ) : (
               <Input placeholder="Nama perusahaan (belum ada di sistem)" value={form.company} onChange={(e) => handleChange("company", e.target.value)} required />
             )}
-            <p className="text-xs text-muted-foreground">
-              {companies.length > 0 ? "Daftar dari admin (otomatis sinkron)" : "Belum ada perusahaan terdaftar — admin perlu menambahkan dulu, atau ketik manual"}
-            </p>
+           
           </div>
           <div className="space-y-2">
-            <Label>Project yang Dipegang</Label>
+            <Label>Project</Label>
             {!form.company ? (
               <Input disabled placeholder="Pilih perusahaan terlebih dahulu" />
             ) : filteredProjects.length > 0 ? (
@@ -158,7 +156,7 @@ const RegisterPage = () => {
                     </label>
                   );
                 })}
-                <p className="text-xs text-muted-foreground px-2 pt-1">Boleh pilih lebih dari satu project</p>
+
               </div>
             ) : (
               <Input placeholder="Belum ada project untuk perusahaan ini — ketik manual atau kosongkan" value={form.project} onChange={(e) => handleChange("project", e.target.value)} />
