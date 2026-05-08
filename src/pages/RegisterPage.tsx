@@ -18,6 +18,7 @@ const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
   const [projects, setProjects] = useState<{ id: string; name: string; company_id: string | null }[]>([]);
+  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [form, setForm] = useState({
     fullName: "", email: "", phone: "", position: "",
     company: "", project: "", password: "", confirmPassword: "",
