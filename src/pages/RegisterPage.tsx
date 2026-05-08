@@ -51,7 +51,15 @@ const RegisterPage = () => {
   const handleChange = (field: string, value: string) => {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
-      if (field === "company") next.project = "";
+      if (field === "company") { next.project = ""; setSelectedProjects([]); }
+      return next;
+    });
+  };
+
+  const toggleProject = (name: string) => {
+    setSelectedProjects((prev) => {
+      const next = prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name];
+      setForm((f) => ({ ...f, project: next.join(", ") }));
       return next;
     });
   };
