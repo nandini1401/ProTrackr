@@ -135,6 +135,22 @@ const UserReportPage = () => {
 
         {/* Form */}
         <form onSubmit={handleSubmitReport} className="bg-card rounded-2xl border shadow-sm p-6 space-y-5">
+          {userProjects.length > 1 && (
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Pilih Project</Label>
+              <select
+                value={selectedProject}
+                onChange={(e) => setSelectedProject(e.target.value)}
+                className="w-full rounded-xl border bg-background px-3 py-2 text-sm"
+                required
+              >
+                <option value="">-- Pilih project --</option>
+                {userProjects.map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Detail Pekerjaan Hari ini?</Label>
             <Textarea
