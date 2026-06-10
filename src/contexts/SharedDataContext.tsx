@@ -493,6 +493,9 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
   }, [projects, fetchAll]);
 
   const updateForm = useCallback(async (id: string, data: Partial<FormData>) => {
+    // Optimistic local update for instant UI feedback
+    setForms(prev => prev.map(f => f.id === id ? { ...f, ...data } : f));
+
     const upd: any = {};
     if (data.workToday !== undefined) upd.work_today = data.workToday;
     if (data.manpower !== undefined) upd.manpower = data.manpower;
@@ -506,15 +509,13 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
       const photosTag = photos.length ? `\n__PHOTOS__:${JSON.stringify(photos)}` : "";
       upd.materials = (materials || "") + photosTag;
     }
-    await supabase.from("forms").update(upd).eq("id", id);
 
-    // Sync photos to project_files (Berkas) when reportPhotos is edited
     if (data.reportPhotos !== undefined) {
+      await supabase.from("forms").update(upd).eq("id", id);
       const cur = forms.find(f => f.id === id);
       if (cur) {
         const project = projects.find(p => p.name === cur.project);
         if (project) {
-          // Remove old auto-generated report files for this form's date+reporter, then re-insert
           const namePrefix = `Laporan ${cur.reporterName || "User"} - ${cur.date || ""}`;
           await supabase.from("project_files")
             .delete()
@@ -531,8 +532,11 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
           }
         }
       }
+      await fetchAll();
+    } else {
+      // Fire-and-forget for simple field updates (e.g. status) — UI already updated optimistically
+      supabase.from("forms").update(upd).eq("id", id).then(() => {});
     }
-    await fetchAll();
   }, [forms, projects, fetchAll]);
 
   const deleteForm = useCallback(async (id: string) => {
