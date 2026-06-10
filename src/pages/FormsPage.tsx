@@ -23,7 +23,7 @@ const templateColors: Record<string, string> = {
 };
 
 const FormsPage = () => {
-  const { forms, deleteForm } = useSharedData();
+  const { forms, deleteForm, updateForm } = useSharedData();
   const [search, setSearch] = useState("");
   const [selectedForm, setSelectedForm] = useState<FormData | null>(null);
   const [filterDate, setFilterDate] = useState<Date | undefined>(new Date());
