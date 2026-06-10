@@ -39,9 +39,9 @@ export function UserSidebar() {
     .slice(0, 2)
     .toUpperCase() || "U";
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login", { replace: true });
   };
 
   return (
