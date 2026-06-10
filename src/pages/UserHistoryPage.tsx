@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { FileText, Calendar, Clock, Trash2, Pencil, Camera, Save } from "lucide-react";
+import { StatusBadge } from "@/components/StatusBadge";
 import { toast } from "sonner";
 
 interface UserReport {
@@ -19,6 +20,7 @@ interface UserReport {
   notes: string;
   photos: string[];
   submittedAt: string;
+  status?: "draft" | "submitted" | "closed";
 }
 
 function getUserReports(userId: string): UserReport[] {
