@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useSharedData, FormData } from "@/contexts/SharedDataContext";
 import { Search, Trash2, MessageCircle, CalendarIcon } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -30,6 +30,14 @@ const FormsPage = () => {
   const [chatTarget, setChatTarget] = useState<FormData | null>(null);
 
   const filterDateStr = filterDate ? format(filterDate, "yyyy-MM-dd") : "";
+
+  const reportDates = useMemo(
+    () => forms.map((f) => {
+      const [y, m, d] = f.date.split("-").map(Number);
+      return new Date(y, m - 1, d);
+    }),
+    [forms]
+  );
 
   const filtered = forms.filter((f) => {
     if (filterDateStr && f.date !== filterDateStr) return false;
@@ -65,7 +73,15 @@ const FormsPage = () => {
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={filterDate} onSelect={setFilterDate} initialFocus className={cn("p-3 pointer-events-auto")} />
+              <Calendar
+                mode="single"
+                selected={filterDate}
+                onSelect={setFilterDate}
+                initialFocus
+                modifiers={{ hasReport: reportDates }}
+                modifiersClassNames={{ hasReport: "bg-primary/20 text-primary font-semibold ring-1 ring-primary/40" }}
+                className={cn("p-3 pointer-events-auto")}
+              />
             </PopoverContent>
           </Popover>
           {filterDate && (
