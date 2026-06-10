@@ -134,7 +134,53 @@ const FormsPage = () => {
                       <span className="text-xs text-muted-foreground">-</span>
                     )}
                   </td>
-                  <td className="p-3"><StatusBadge status={form.status} /></td>
+                  <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="cursor-pointer hover:opacity-80 transition-opacity" title="Klik untuk ubah status">
+                          <StatusBadge status={form.status} />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-48 p-2" align="start">
+                        <p className="text-xs text-muted-foreground px-2 py-1">Tindakan Laporan</p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-start text-success hover:text-success hover:bg-success/10"
+                          disabled={form.status === "closed"}
+                          onClick={async () => {
+                            await updateForm(form.id, { status: "closed" });
+                            toast.success(`Laporan "${form.formNumber}" disetujui`);
+                          }}
+                        >
+                          ✓ Approve
+                        </Button>
+                        {form.submittedBy && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start"
+                            onClick={() => setChatTarget(form)}
+                          >
+                            <MessageCircle className="h-4 w-4 mr-2" /> Beri Tanggapan
+                          </Button>
+                        )}
+                        {form.status === "closed" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start text-muted-foreground"
+                            onClick={async () => {
+                              await updateForm(form.id, { status: "submitted" });
+                              toast.info(`Status dikembalikan ke Submitted`);
+                            }}
+                          >
+                            ↺ Batalkan Approve
+                          </Button>
+                        )}
+                      </PopoverContent>
+                    </Popover>
+                  </td>
                   <td className="p-3">
                     <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                       {form.submittedBy && (
