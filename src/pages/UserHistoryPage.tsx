@@ -56,6 +56,7 @@ const UserHistoryPage = () => {
       notes: f.materials === "-" ? "" : f.materials,
       photos: f.reportPhotos || [],
       submittedAt: f.date,
+      status: (f.status as any) || "submitted",
     }));
     const local = getUserReports(currentUser.id);
     const serverNumbers = new Set(fromServer.map(r => r.formNumber));
