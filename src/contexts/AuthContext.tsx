@@ -175,14 +175,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // 🔥 LOGOUT
   const logout = async () => {
-    setAuthUser(null);
-    setCurrentUser(null);
-    setRole(null);
     try {
       await supabase.auth.signOut();
     } catch (e) {
       console.warn("signOut error", e);
     }
+    setAuthUser(null);
+    setCurrentUser(null);
+    setRole(null);
   };
 
 

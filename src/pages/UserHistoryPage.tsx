@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { FileText, Calendar, Clock, Trash2, Pencil, Camera, Save } from "lucide-react";
+import { StatusBadge } from "@/components/StatusBadge";
 import { toast } from "sonner";
 
 interface UserReport {
@@ -19,6 +20,7 @@ interface UserReport {
   notes: string;
   photos: string[];
   submittedAt: string;
+  status?: "draft" | "submitted" | "closed";
 }
 
 function getUserReports(userId: string): UserReport[] {
@@ -54,6 +56,7 @@ const UserHistoryPage = () => {
       notes: f.materials === "-" ? "" : f.materials,
       photos: f.reportPhotos || [],
       submittedAt: f.date,
+      status: (f.status as any) || "submitted",
     }));
     const local = getUserReports(currentUser.id);
     const serverNumbers = new Set(fromServer.map(r => r.formNumber));
@@ -183,12 +186,13 @@ const UserHistoryPage = () => {
             {reports.map((report) => (
               <div key={report.id} className="bg-card rounded-2xl border shadow-sm p-5 space-y-3 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-semibold text-foreground">{report.date}</span>
                     {report.formNumber && (
                       <Badge variant="outline" className="text-xs">{report.formNumber}</Badge>
                     )}
+                    <StatusBadge status={report.status || "submitted"} />
                   </div>
                   <div className="flex items-center gap-1">
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => openEdit(report)}>
