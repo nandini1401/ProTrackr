@@ -339,18 +339,33 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetchAll();
 
+    // Debounce realtime bursts so 7 tables firing in the same tick = 1 refetch
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let inflight = false;
+    const scheduleRefetch = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(async () => {
+        if (inflight) { scheduleRefetch(); return; }
+        inflight = true;
+        try { await fetchAll(); } finally { inflight = false; }
+      }, 400);
+    };
+
     const ch = supabase
       .channel("shared-data-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "companies" }, fetchAll)
-      .on("postgres_changes", { event: "*", schema: "public", table: "people" }, fetchAll)
-      .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, fetchAll)
-      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, fetchAll)
-      .on("postgres_changes", { event: "*", schema: "public", table: "forms" }, fetchAll)
-      .on("postgres_changes", { event: "*", schema: "public", table: "project_files" }, fetchAll)
-      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, fetchAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "companies" }, scheduleRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "people" }, scheduleRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, scheduleRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, scheduleRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "forms" }, scheduleRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "project_files" }, scheduleRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, scheduleRefetch)
       .subscribe();
 
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      supabase.removeChannel(ch);
+    };
   }, [fetchAll]);
 
   // Cross-tab activity sync
