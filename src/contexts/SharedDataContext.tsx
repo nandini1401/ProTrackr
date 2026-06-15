@@ -147,17 +147,23 @@ function formatTimeAgo(timestamp: number): string {
 
 const channel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("shared_data_sync") : null;
 
+const CACHE_KEY = "shared_data_cache_v1";
+function loadCache(): any {
+  try { return JSON.parse(localStorage.getItem(CACHE_KEY) || "null"); } catch { return null; }
+}
+
 export function SharedDataProvider({ children }: { children: ReactNode }) {
-  const [people, setPeople] = useState<PersonData[]>([]);
-  const [companies, setCompanies] = useState<CompanyData[]>([]);
-  const [projects, setProjects] = useState<ProjectData[]>([]);
-  const [tasks, setTasks] = useState<TaskData[]>([]);
-  const [forms, setForms] = useState<FormData[]>([]);
-  const [projectFiles, setProjectFiles] = useState<ProjectFileData[]>([]);
+  const cached = typeof window !== "undefined" ? loadCache() : null;
+  const [people, setPeople] = useState<PersonData[]>(cached?.people || []);
+  const [companies, setCompanies] = useState<CompanyData[]>(cached?.companies || []);
+  const [projects, setProjects] = useState<ProjectData[]>(cached?.projects || []);
+  const [tasks, setTasks] = useState<TaskData[]>(cached?.tasks || []);
+  const [forms, setForms] = useState<FormData[]>(cached?.forms || []);
+  const [projectFiles, setProjectFiles] = useState<ProjectFileData[]>(cached?.projectFiles || []);
   const [activities, setActivities] = useState<ActivityData[]>(() => {
     try { return JSON.parse(localStorage.getItem("shared_activities") || "[]"); } catch { return []; }
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!cached);
 
   // Persist activities locally (admin-only feed) — cap size + strip heavy fields to avoid quota errors
   useEffect(() => {
@@ -332,8 +338,21 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
     setProjects(projectsData);
     setTasks(tasksData);
     setForms(formsData);
-    setProjectFiles(Array.from(pfMap.values()));
+    const pfArr = Array.from(pfMap.values());
+    setProjectFiles(pfArr);
     setLoading(false);
+    // Persist a lightweight snapshot for instant hydration on next load
+    try {
+      const slim = {
+        companies: companiesData,
+        people: peopleData.map(p => ({ ...p, avatar: p.avatar && p.avatar.startsWith("data:") ? "" : p.avatar })),
+        projects: projectsData,
+        tasks: tasksData,
+        forms: formsData.map(f => ({ ...f, reportPhotos: [], reporterAvatar: f.reporterAvatar?.startsWith("data:") ? "" : f.reporterAvatar })),
+        projectFiles: pfArr.map(pf => ({ ...pf, files: pf.files.map(fi => ({ ...fi, url: fi.url?.startsWith("data:") ? "" : fi.url })) })),
+      };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(slim));
+    } catch { /* quota — ignore */ }
   }, []);
 
   useEffect(() => {
