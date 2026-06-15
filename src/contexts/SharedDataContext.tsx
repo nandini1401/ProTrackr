@@ -338,8 +338,21 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
     setProjects(projectsData);
     setTasks(tasksData);
     setForms(formsData);
-    setProjectFiles(Array.from(pfMap.values()));
+    const pfArr = Array.from(pfMap.values());
+    setProjectFiles(pfArr);
     setLoading(false);
+    // Persist a lightweight snapshot for instant hydration on next load
+    try {
+      const slim = {
+        companies: companiesData,
+        people: peopleData.map(p => ({ ...p, avatar: p.avatar && p.avatar.startsWith("data:") ? "" : p.avatar })),
+        projects: projectsData,
+        tasks: tasksData,
+        forms: formsData.map(f => ({ ...f, reportPhotos: [], reporterAvatar: f.reporterAvatar?.startsWith("data:") ? "" : f.reporterAvatar })),
+        projectFiles: pfArr.map(pf => ({ ...pf, files: pf.files.map(fi => ({ ...fi, url: fi.url?.startsWith("data:") ? "" : fi.url })) })),
+      };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(slim));
+    } catch { /* quota — ignore */ }
   }, []);
 
   useEffect(() => {
