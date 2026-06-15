@@ -182,13 +182,15 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
   }, [activities]);
 
   const fetchAll = useCallback(async () => {
+    const formColumns = "id,form_number,project_id,template_type,date,status,progress,work_today,manpower,submitted_by,created_at";
+    const projectFileColumns = "id,project_id,name,date,created_at";
     const [comp, peep, proj, tsk, frm, pf, prof] = await Promise.all([
       supabase.from("companies").select("*").order("created_at", { ascending: false }),
       supabase.from("people").select("*").order("created_at", { ascending: false }),
       supabase.from("projects").select("*").order("created_at", { ascending: false }),
       supabase.from("tasks").select("*").order("created_at", { ascending: false }),
-      supabase.from("forms").select("*").order("created_at", { ascending: false }),
-      supabase.from("project_files").select("*").order("created_at", { ascending: false }),
+      supabase.from("forms").select(formColumns).order("created_at", { ascending: false }),
+      supabase.from("project_files").select(projectFileColumns).order("created_at", { ascending: false }),
       supabase.from("profiles").select("user_id,email,avatar_url,project,company"),
     ]);
 
@@ -273,9 +275,10 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
         ? peopleData.find(p => p.email.toLowerCase() === submitterEmail)
         : undefined;
       const reporterAvatarFromProfile = submitterProfile?.avatar_url || "";
+      const rawMaterials = typeof f.materials === "string" ? f.materials : "";
       let photos: string[] = [];
       try {
-        const m = (f.materials || "").match(/__PHOTOS__:(.+)$/);
+        const m = rawMaterials.match(/__PHOTOS__:(.+)$/);
         if (m) photos = JSON.parse(m[1]);
       } catch { /* ignore */ }
       return {
@@ -289,7 +292,7 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
         progress: f.progress || 0,
         workToday: f.work_today || "",
         manpower: f.manpower || 0,
-        materials: (f.materials || "").replace(/__PHOTOS__:.*$/, "").trim(),
+        materials: rawMaterials.replace(/__PHOTOS__:.*$/, "").trim(),
         reporterName: reporter?.name || submitterProfile?.email?.split("@")[0] || "User",
         reporterPhone: reporter?.phone || "-",
         reporterAvatar: reporter?.avatar || reporterAvatarFromProfile || "",
@@ -327,7 +330,7 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
       pfMap.get(key)!.files.push({
         id: file.id,
         name: file.name,
-        url: file.url,
+        url: file.url || "",
         uploadedBy: "",
         date: file.date || "",
       });
@@ -367,7 +370,7 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
         if (inflight) { scheduleRefetch(); return; }
         inflight = true;
         try { await fetchAll(); } finally { inflight = false; }
-      }, 400);
+      }, 150);
     };
 
     const ch = supabase
