@@ -125,33 +125,59 @@ const MessagesPage = () => {
               <p>Belum ada percakapan</p>
             </div>
           ) : filtered.map(c => (
-            <button
+            <div
               key={c.peerId}
-              onClick={() => setChatPeer({ id: c.peerId, name: c.peerName })}
-              className="w-full flex items-center gap-3 p-4 hover:bg-muted/40 transition text-left"
+              className="w-full flex items-center gap-3 p-4 hover:bg-muted/40 transition"
             >
-              <Avatar className="h-11 w-11">
-                <AvatarImage src={c.peerAvatar} />
-                <AvatarFallback>{c.peerName.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-medium text-foreground truncate">{c.peerName}</p>
-                  <span className="text-[10px] text-muted-foreground flex-shrink-0">
-                    {new Date(c.lastTime).toLocaleString("id-ID", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short" })}
-                  </span>
+              <button
+                onClick={() => setChatPeer({ id: c.peerId, name: c.peerName })}
+                className="flex-1 flex items-center gap-3 text-left min-w-0"
+              >
+                <Avatar className="h-11 w-11">
+                  <AvatarImage src={c.peerAvatar} />
+                  <AvatarFallback>{c.peerName.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-medium text-foreground truncate">{c.peerName}</p>
+                    <span className="text-[10px] text-muted-foreground flex-shrink-0">
+                      {new Date(c.lastTime).toLocaleString("id-ID", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short" })}
+                    </span>
+                  </div>
+                  {c.peerJobTitle && <p className="text-xs text-muted-foreground">{c.peerJobTitle}</p>}
+                  <p className={`text-sm truncate ${c.unread > 0 ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
+                    {c.isFromPeer ? "" : "Anda: "}{c.lastMessage}
+                  </p>
                 </div>
-                {c.peerJobTitle && <p className="text-xs text-muted-foreground">{c.peerJobTitle}</p>}
-                <p className={`text-sm truncate ${c.unread > 0 ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
-                  {c.isFromPeer ? "" : "Anda: "}{c.lastMessage}
-                </p>
-              </div>
+              </button>
               {c.unread > 0 && (
                 <span className="h-5 min-w-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
                   {c.unread}
                 </span>
               )}
-            </button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    className="p-2 text-muted-foreground hover:text-destructive transition"
+                    aria-label="Hapus percakapan"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Hapus percakapan?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Seluruh pesan dengan {c.peerName} akan dihapus permanen.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => deleteConversation(c.peerId)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Hapus</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           ))}
         </div>
 
