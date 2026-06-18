@@ -38,6 +38,17 @@ const MessagesPage = () => {
   const [search, setSearch] = useState("");
   const [chatPeer, setChatPeer] = useState<{ id: string; name: string } | null>(null);
 
+  const deleteConversation = async (peerId: string) => {
+    if (!authUser) return;
+    const { error } = await supabase
+      .from("messages")
+      .delete()
+      .or(`and(sender_id.eq.${authUser.id},recipient_id.eq.${peerId}),and(sender_id.eq.${peerId},recipient_id.eq.${authUser.id})`);
+    if (error) { toast.error("Gagal menghapus percakapan"); return; }
+    setMessages((prev) => prev.filter((m) => m.sender_id !== peerId && m.recipient_id !== peerId));
+    toast.success("Percakapan dihapus");
+  };
+
   const load = async () => {
     if (!authUser) return;
     const { data } = await supabase
