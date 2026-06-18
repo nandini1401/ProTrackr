@@ -28,7 +28,8 @@ interface ChatDialogProps {
 }
 
 export function ChatDialog({ open, onOpenChange, peerUserId, peerName, formId, formNumber }: ChatDialogProps) {
-  const { authUser } = useAuth();
+  const { authUser, role } = useAuth();
+  const isAdmin = role === "admin";
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
