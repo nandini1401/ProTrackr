@@ -84,14 +84,55 @@ export function ChatDialog({ open, onOpenChange, peerUserId, peerName, formId, f
     setText("");
   };
 
+  const deleteMessage = async (id: string) => {
+    const { error } = await supabase.from("messages").delete().eq("id", id);
+    if (error) { toast.error("Gagal menghapus pesan"); return; }
+    setMessages((prev) => prev.filter((m) => m.id !== id));
+    toast.success("Pesan dihapus");
+  };
+
+  const deleteAll = async () => {
+    if (!authUser || !peerUserId) return;
+    const { error } = await supabase
+      .from("messages")
+      .delete()
+      .or(`and(sender_id.eq.${authUser.id},recipient_id.eq.${peerUserId}),and(sender_id.eq.${peerUserId},recipient_id.eq.${authUser.id})`);
+    if (error) { toast.error("Gagal menghapus percakapan"); return; }
+    setMessages([]);
+    toast.success("Percakapan dihapus");
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>
-            Chat dengan {peerName}
-            {formNumber && <span className="text-xs text-muted-foreground ml-2">({formNumber})</span>}
-          </DialogTitle>
+          <div className="flex items-center justify-between gap-2 pr-6">
+            <DialogTitle>
+              Chat dengan {peerName}
+              {formNumber && <span className="text-xs text-muted-foreground ml-2">({formNumber})</span>}
+            </DialogTitle>
+            {isAdmin && messages.length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Hapus semua percakapan?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Seluruh pesan dengan {peerName} akan dihapus permanen.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                    <AlertDialogAction onClick={deleteAll} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Hapus</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </DialogHeader>
         <div ref={scrollRef} className="h-80 overflow-y-auto bg-muted/30 rounded-lg p-3 space-y-2">
           {messages.length === 0 && (
@@ -99,14 +140,33 @@ export function ChatDialog({ open, onOpenChange, peerUserId, peerName, formId, f
           )}
           {messages.map((m) => {
             const mine = m.sender_id === authUser?.id;
+            const canDelete = isAdmin || mine;
             return (
-              <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+              <div key={m.id} className={`group flex items-center gap-1 ${mine ? "justify-end" : "justify-start"}`}>
+                {mine && canDelete && (
+                  <button
+                    onClick={() => deleteMessage(m.id)}
+                    className="opacity-0 group-hover:opacity-100 transition text-muted-foreground hover:text-destructive p-1"
+                    aria-label="Hapus pesan"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
                 <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${mine ? "bg-primary text-primary-foreground" : "bg-card border"}`}>
                   <p className="whitespace-pre-wrap break-words">{m.content}</p>
                   <p className={`text-[10px] mt-1 ${mine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
                     {new Date(m.created_at).toLocaleString("id-ID", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short" })}
                   </p>
                 </div>
+                {!mine && canDelete && (
+                  <button
+                    onClick={() => deleteMessage(m.id)}
+                    className="opacity-0 group-hover:opacity-100 transition text-muted-foreground hover:text-destructive p-1"
+                    aria-label="Hapus pesan"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
             );
           })}
