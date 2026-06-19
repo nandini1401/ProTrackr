@@ -402,6 +402,13 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
     // Refetch when auth session refreshes (realtime channel dies on token expiry)
     const { data: authSub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN") scheduleRefetch(0);
+      if (event === "SIGNED_OUT") {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        setCompanies([]); setPeople([]); setProjects([]); setTasks([]);
+        setForms([]); setProjectFiles([]); setActivities([]);
+        try { localStorage.removeItem("shared_data_cache_v1"); } catch {}
+        try { localStorage.removeItem("shared_activities"); } catch {}
+      }
     });
 
     return () => {
