@@ -361,31 +361,53 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetchAll();
 
-    // Debounce realtime bursts so 7 tables firing in the same tick = 1 refetch
+    // Debounce realtime bursts so multiple tables firing in the same tick = 1 refetch
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     let inflight = false;
-    const scheduleRefetch = () => {
+    const scheduleRefetch = (delay = 150) => {
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(async () => {
-        if (inflight) { scheduleRefetch(); return; }
+        if (inflight) { scheduleRefetch(50); return; }
         inflight = true;
         try { await fetchAll(); } finally { inflight = false; }
-      }, 150);
+      }, delay);
     };
+    // Forms get instant priority so admin notifications appear immediately
+    const scheduleFast = () => scheduleRefetch(0);
 
     const ch = supabase
       .channel("shared-data-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "companies" }, scheduleRefetch)
-      .on("postgres_changes", { event: "*", schema: "public", table: "people" }, scheduleRefetch)
-      .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, scheduleRefetch)
-      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, scheduleRefetch)
-      .on("postgres_changes", { event: "*", schema: "public", table: "forms" }, scheduleRefetch)
-      .on("postgres_changes", { event: "*", schema: "public", table: "project_files" }, scheduleRefetch)
-      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, scheduleRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "companies" }, () => scheduleRefetch())
+      .on("postgres_changes", { event: "*", schema: "public", table: "people" }, () => scheduleRefetch())
+      .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, () => scheduleRefetch())
+      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, () => scheduleRefetch())
+      .on("postgres_changes", { event: "*", schema: "public", table: "forms" }, scheduleFast)
+      .on("postgres_changes", { event: "*", schema: "public", table: "project_files" }, () => scheduleRefetch())
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => scheduleRefetch())
       .subscribe();
+
+    // Safety-net polling: catches missed realtime events (expired JWT, dropped socket)
+    const pollInterval = setInterval(() => scheduleRefetch(0), 15000);
+
+    // Refetch on tab focus / network resume so admin sees latest right away
+    const onFocus = () => scheduleRefetch(0);
+    const onVisible = () => { if (document.visibilityState === "visible") scheduleRefetch(0); };
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("online", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
+
+    // Refetch when auth session refreshes (realtime channel dies on token expiry)
+    const { data: authSub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN") scheduleRefetch(0);
+    });
 
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer);
+      clearInterval(pollInterval);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("online", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
+      authSub.subscription.unsubscribe();
       supabase.removeChannel(ch);
     };
   }, [fetchAll]);
