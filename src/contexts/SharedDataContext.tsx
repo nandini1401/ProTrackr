@@ -182,6 +182,9 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
   }, [activities]);
 
   const fetchAll = useCallback(async () => {
+    // Skip when signed out — avoids spamming RLS-protected tables after logout
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setLoading(false); return; }
     const formColumns = "id,form_number,project_id,template_type,date,status,progress,work_today,manpower,materials,submitted_by,created_at";
     const projectFileColumns = "id,project_id,name,date,created_at";
     const [comp, peep, proj, tsk, frm, pf, prof] = await Promise.all([
