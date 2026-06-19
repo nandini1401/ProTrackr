@@ -173,16 +173,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
 
-  // 🔥 LOGOUT
+  // 🔥 LOGOUT — instant UI, signOut runs in background
   const logout = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (e) {
-      console.warn("signOut error", e);
-    }
+    // Clear local state immediately so UI redirects without waiting on network
     setAuthUser(null);
     setCurrentUser(null);
     setRole(null);
+    try { localStorage.removeItem("shared_data_cache_v1"); } catch {}
+    try { localStorage.removeItem("shared_activities"); } catch {}
+    // Local-scope signOut is synchronous on the client; fire-and-forget to avoid hangs
+    supabase.auth.signOut({ scope: "local" }).catch((e) => console.warn("signOut error", e));
   };
 
 
