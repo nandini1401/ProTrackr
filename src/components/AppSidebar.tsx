@@ -28,10 +28,10 @@ import {
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Projects", url: "/projects", icon: FolderKanban },
-  { title: "People", url: "/people", icon: Users },
+  { title: "Pekerja", url: "/people", icon: Users },
   { title: "Pesan", url: "/messages", icon: MessageCircle },
   { title: "Perusahaan", url: "/companies", icon: Building2 },
-  { title: "Forms", url: "/forms", icon: FileText },
+  { title: "Laporan", url: "/forms", icon: FileText },
   { title: "Berkas", url: "/files", icon: FolderOpen },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
