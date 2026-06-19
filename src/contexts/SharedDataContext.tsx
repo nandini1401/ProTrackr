@@ -182,6 +182,9 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
   }, [activities]);
 
   const fetchAll = useCallback(async () => {
+    // Skip when signed out — avoids spamming RLS-protected tables after logout
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setLoading(false); return; }
     const formColumns = "id,form_number,project_id,template_type,date,status,progress,work_today,manpower,materials,submitted_by,created_at";
     const projectFileColumns = "id,project_id,name,date,created_at";
     const [comp, peep, proj, tsk, frm, pf, prof] = await Promise.all([
@@ -399,6 +402,13 @@ export function SharedDataProvider({ children }: { children: ReactNode }) {
     // Refetch when auth session refreshes (realtime channel dies on token expiry)
     const { data: authSub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN") scheduleRefetch(0);
+      if (event === "SIGNED_OUT") {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        setCompanies([]); setPeople([]); setProjects([]); setTasks([]);
+        setForms([]); setProjectFiles([]); setActivities([]);
+        try { localStorage.removeItem("shared_data_cache_v1"); } catch {}
+        try { localStorage.removeItem("shared_activities"); } catch {}
+      }
     });
 
     return () => {
