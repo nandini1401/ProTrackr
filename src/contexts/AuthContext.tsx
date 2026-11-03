@@ -51,6 +51,14 @@ const AuthContext = createContext<AuthContextType>({
 
 // 🔥 CENTRAL ERROR HANDLER
 const mapAuthError = (msg: string) => {
+  if (
+    msg.includes("Failed to fetch") ||
+    msg.includes("NetworkError") ||
+    msg.includes("fetch failed") ||
+    msg.includes("Load failed")
+  ) {
+    return "Server sedang tidak dapat dihubungi. Cek koneksi internet Anda dan coba lagi sebentar";
+  }
   if (msg.includes("Invalid login credentials")) {
     return "Email atau password salah";
   }
